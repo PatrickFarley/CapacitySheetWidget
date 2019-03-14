@@ -132,24 +132,28 @@ public class MainActivity extends Activity implements EasyPermissions.Permission
     private void chooseAccount() {
         if (EasyPermissions.hasPermissions(
                 this, Manifest.permission.GET_ACCOUNTS)) {
+            // This seems to go through, even when permissions are an issue.
+
             String accountName = getPreferences(Context.MODE_PRIVATE)
                     .getString(PREF_ACCOUNT_NAME, null);
             if (accountName != null) {
+                // if an account was stored in the preferences
 
-                GoogleAccountManager mgr = new GoogleAccountManager(this);
-                Account[] accountList = mgr.getAccounts();
+//                GoogleAccountManager mgr = new GoogleAccountManager(this);
+//                Account[] accountList = mgr.getAccounts();
                 mCredential.setSelectedAccountName(accountName);
                 //mCredential.setSelectedAccount(new Account("pf4rley7@gmail.com", "com.google"));
                 getResultsFromApi();
             } else {
+                // when we don't have an account stored in preferences
                 // Start a dialog from which the user can choose an account
-                // This code runs the first time.
                 startActivityForResult(
                         mCredential.newChooseAccountIntent(),
                         REQUEST_ACCOUNT_PICKER);
             }
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
+            // This code runs the first time.
             EasyPermissions.requestPermissions(
                     this,
                     "This app needs to access your Google account (via Contacts).",
