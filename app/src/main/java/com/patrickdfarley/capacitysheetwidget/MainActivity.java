@@ -60,7 +60,7 @@ import java.util.List;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class MainActivity extends Activity implements EasyPermissions.PermissionCallbacks {
+public class MainActivity extends Activity {
     GoogleAccountCredential mCredential;
     TextView mOutputText;
     ProgressDialog mProgress;
@@ -70,6 +70,7 @@ public class MainActivity extends Activity implements EasyPermissions.Permission
     static final int REQUEST_AUTHORIZATION = 1001;
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
+    static final int REQUEST_PERMISSION_READ_CONTACTS = 1004;
 
     private static final String TAG = "MainActivity";
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
@@ -107,6 +108,7 @@ public class MainActivity extends Activity implements EasyPermissions.Permission
      */
     private void getResultsFromApi() {
         Log.d(TAG, "get results called");
+        checkAccounts();
         if (! isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
         } else if (mCredential.getSelectedAccountName() == null) {
@@ -116,6 +118,22 @@ public class MainActivity extends Activity implements EasyPermissions.Permission
         } else {
             new MakeRequestTask(mCredential, this).execute();
         }
+    }
+
+    public void checkAccounts(){
+        String ans = isGoogleAccountPresent() ? "true" : "false";
+        Log.d(TAG,"is google account?: " + ans);
+    }
+
+    public boolean isGoogleAccountPresent() {
+
+        AccountManager manager = AccountManager.get(this);
+        for(Account account : manager.getAccounts()) {
+            if("com.google".equals(account.type)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -132,7 +150,6 @@ public class MainActivity extends Activity implements EasyPermissions.Permission
     private void chooseAccount() {
         if (EasyPermissions.hasPermissions(
                 this, Manifest.permission.GET_ACCOUNTS)) {
-            // This seems to go through, even when permissions are an issue.
 
             String accountName = getPreferences(Context.MODE_PRIVATE)
                     .getString(PREF_ACCOUNT_NAME, null);
@@ -229,29 +246,29 @@ public class MainActivity extends Activity implements EasyPermissions.Permission
                 requestCode, permissions, grantResults, this);
     }
 
-    /**
-     * Callback for when a permission is granted using the EasyPermissions
-     * library.
-     * @param requestCode The request code associated with the requested
-     *         permission
-     * @param list The requested permission list. Never null.
-     */
-    @Override
-    public void onPermissionsGranted(int requestCode, List<String> list) {
-        // Do nothing.
-    }
-
-    /**
-     * Callback for when a permission is denied using the EasyPermissions
-     * library.
-     * @param requestCode The request code associated with the requested
-     *         permission
-     * @param list The requested permission list. Never null.
-     */
-    @Override
-    public void onPermissionsDenied(int requestCode, List<String> list) {
-        // Do nothing.
-    }
+//    /**
+//     * Callback for when a permission is granted using the EasyPermissions
+//     * library.
+//     * @param requestCode The request code associated with the requested
+//     *         permission
+//     * @param list The requested permission list. Never null.
+//     */
+//    @Override
+//    public void onPermissionsGranted(int requestCode, List<String> list) {
+//        // Do nothing.
+//    }
+//
+//    /**
+//     * Callback for when a permission is denied using the EasyPermissions
+//     * library.
+//     * @param requestCode The request code associated with the requested
+//     *         permission
+//     * @param list The requested permission list. Never null.
+//     */
+//    @Override
+//    public void onPermissionsDenied(int requestCode, List<String> list) {
+//        // Do nothing.
+//    }
 
     /**
      * Checks whether the device currently has a network connection.
