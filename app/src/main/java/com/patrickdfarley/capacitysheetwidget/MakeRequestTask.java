@@ -1,7 +1,9 @@
 package com.patrickdfarley.capacitysheetwidget;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.text.TextUtils;
 import android.widget.TextView;
@@ -21,6 +23,8 @@ import com.patrickdfarley.capacitysheetwidget.MainActivity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.patrickdfarley.capacitysheetwidget.MainActivity.REQUEST_AUTHORIZATION;
 
 /**
  * An asynchronous task that handles the Google Sheets API call.
@@ -48,7 +52,7 @@ public class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
 
         mService = new Sheets.Builder(
                 transport, jsonFactory, credential)
-                .setApplicationName("Google Sheets API Android Quickstart")
+                .setApplicationName("@string/app_name")
                 .build();
     }
 
@@ -61,6 +65,17 @@ public class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
         try {
             return getDataFromApi();
         } catch (Exception e) {
+            if (e instanceof UserRecoverableAuthIOException) {
+//                Intent authorizationIntent = new Intent(this,
+//                        GmailAuthorizationActivity.class)
+//                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//
+//                authorizationIntent.setAction("UserRecoverableAuthIOException");
+//                authorizationIntent.putExtra("request_authorization",
+//                        ((UserRecoverableAuthIOException) e).getIntent());
+//
+//                getContext().startActivity(authorizationIntent);
+            }
             mLastError = e;
             cancel(true);
             return null;
@@ -110,22 +125,22 @@ public class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
 
     @Override
     protected void onCancelled() {
-//        mProgress.hide();
-//        if (mLastError != null) {
-//            if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
+        mProgress.hide();
+        if (mLastError != null) {
+            if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
 //                showGooglePlayServicesAvailabilityErrorDialog(
 //                        ((GooglePlayServicesAvailabilityIOException) mLastError)
 //                                .getConnectionStatusCode());
-//            } else if (mLastError instanceof UserRecoverableAuthIOException) {
-//                startActivityForResult(
-//                        ((UserRecoverableAuthIOException) mLastError).getIntent(),
-//                        MainActivity.REQUEST_AUTHORIZATION);
-//            } else {
-//                Log.d(TAG,"The following error occurred:\n"
-//                        + mLastError.getMessage());
-//            }
-//        } else {
-//            Log.d(TAG,"Request cancelled.");
-//        }
+            } else if (mLastError instanceof UserRecoverableAuthIOException) {
+                ((Activity) context).startActivityForResult(
+                        ((UserRecoverableAuthIOException) mLastError).getIntent(),
+                        MainActivity.REQUEST_AUTHORIZATION);
+            } else {
+                Log.d(TAG,"The following error occurred:\n"
+                        + mLastError.getMessage());
+            }
+        } else {
+            Log.d(TAG,"Request cancelled.");
+        }
     }
 }

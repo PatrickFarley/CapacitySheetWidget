@@ -75,7 +75,7 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
 
-    private static final String[] SCOPES = { SheetsScopes.SPREADSHEETS_READONLY };
+    private static final String[] SCOPES = { SheetsScopes.SPREADSHEETS_READONLY, SheetsScopes.SPREADSHEETS };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,24 +116,29 @@ public class MainActivity extends Activity {
         } else if (! isDeviceOnline()) {
             mOutputText.setText("No network connection available.");
         } else {
+            Log.d(TAG, "making request task...");
             new MakeRequestTask(mCredential, this).execute();
         }
     }
 
     public void checkAccounts(){
-        String ans = isGoogleAccountPresent() ? "true" : "false";
-        Log.d(TAG,"is google account?: " + ans);
+        String ans = isGoogleAccountPresent();
+        Log.d(TAG,"google accounts?: " + ans);
     }
 
-    public boolean isGoogleAccountPresent() {
+    public String isGoogleAccountPresent() {
 
+        String toReturn = "";
         AccountManager manager = AccountManager.get(this);
         for(Account account : manager.getAccounts()) {
-            if("com.google".equals(account.type)) {
-                return true;
-            }
+            toReturn += account.toString() + " ";
         }
-        return false;
+        if (EasyPermissions.hasPermissions(this, Manifest.permission.GET_ACCOUNTS)){
+            toReturn += " has permission";
+        } else {
+            toReturn += " does not have permission";
+        }
+        return toReturn;
     }
 
     /**
@@ -149,7 +154,7 @@ public class MainActivity extends Activity {
     @AfterPermissionGranted(REQUEST_PERMISSION_GET_ACCOUNTS)
     private void chooseAccount() {
         if (EasyPermissions.hasPermissions(
-                this, Manifest.permission.GET_ACCOUNTS)) {
+                this, Manifest.permission.GET_ACCOUNTS, Manifest.permission.READ_CONTACTS)) {
 
             String accountName = getPreferences(Context.MODE_PRIVATE)
                     .getString(PREF_ACCOUNT_NAME, null);
@@ -165,8 +170,7 @@ public class MainActivity extends Activity {
                 // when we don't have an account stored in preferences
                 // Start a dialog from which the user can choose an account
                 startActivityForResult(
-                        mCredential.newChooseAccountIntent(),
-                        REQUEST_ACCOUNT_PICKER);
+                        mCredential.newChooseAccountIntent(), REQUEST_ACCOUNT_PICKER);
             }
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
@@ -175,7 +179,7 @@ public class MainActivity extends Activity {
                     this,
                     "This app needs to access your Google account (via Contacts).",
                     REQUEST_PERMISSION_GET_ACCOUNTS,
-                    Manifest.permission.GET_ACCOUNTS);
+                    Manifest.permission.GET_ACCOUNTS, Manifest.permission.READ_CONTACTS);
         }
     }
 
