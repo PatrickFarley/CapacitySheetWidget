@@ -3,31 +3,12 @@ package com.patrickdfarley.capacitysheetwidget;
 import android.accounts.Account;
 import android.os.Bundle;
 
-import com.google.api.client.googleapis.extensions.android.accounts.GoogleAccountManager;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
-import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
-import com.google.api.services.sheets.v4.model.ValueRange;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.security.GeneralSecurityException;
-import java.util.Collections;
-import java.util.List;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
-import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
-import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 
 import android.Manifest;
@@ -40,28 +21,20 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.text.TextUtils;
-import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends Activity {
     GoogleAccountCredential mCredential;
+    GoogleAccountCredential tempCredential;
     TextView mOutputText;
     ProgressDialog mProgress;
     Button mContinueButton;
@@ -81,7 +54,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Log.d("thing","thing");
+        Log.d(TAG,"onCreate");
         mOutputText = findViewById(R.id.sampleTextView);
         mProgress = new ProgressDialog(this);
         mProgress.setMessage("Calling Google Sheets API ...");
@@ -90,14 +63,24 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         // Initialize credentials and service object.
-        mCredential = GoogleAccountCredential.usingOAuth2(
+        mCredential = null;
+        tempCredential = GoogleAccountCredential.usingOAuth2(
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
+
+        createCredential();
     }
 
     public void onContinueButtonClicked(View view){
-        getResultsFromApi();
+        if (mCredential != null){
+            new MakeRequestTask(mCredential, this).execute();
+        } else {
+            Log.d(TAG, "the credential is not yet created.");
+        }
     }
+
+
+    //region Credential provider
 
     /**
      * Attempt to call the API, after verifying that all the preconditions are
@@ -106,18 +89,19 @@ public class MainActivity extends Activity {
      * of the preconditions are not satisfied, the app will prompt the user as
      * appropriate.
      */
-    private void getResultsFromApi() {
+    private void createCredential() {
         Log.d(TAG, "get results called");
-        checkAccounts();
+        //checkAccounts();
+
         if (! isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
-        } else if (mCredential.getSelectedAccountName() == null) {
+        } else if (tempCredential.getSelectedAccountName() == null) {
             chooseAccount();
         } else if (! isDeviceOnline()) {
             mOutputText.setText("No network connection available.");
         } else {
             Log.d(TAG, "making request task...");
-            new MakeRequestTask(mCredential, this).execute();
+            mCredential = tempCredential;
         }
     }
 
@@ -163,14 +147,14 @@ public class MainActivity extends Activity {
 
 //                GoogleAccountManager mgr = new GoogleAccountManager(this);
 //                Account[] accountList = mgr.getAccounts();
-                mCredential.setSelectedAccountName(accountName);
+                tempCredential.setSelectedAccountName(accountName);
                 //mCredential.setSelectedAccount(new Account("pf4rley7@gmail.com", "com.google"));
-                getResultsFromApi();
+                createCredential();
             } else {
                 // when we don't have an account stored in preferences
                 // Start a dialog from which the user can choose an account
                 startActivityForResult(
-                        mCredential.newChooseAccountIntent(), REQUEST_ACCOUNT_PICKER);
+                        tempCredential.newChooseAccountIntent(), REQUEST_ACCOUNT_PICKER);
             }
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
@@ -204,7 +188,7 @@ public class MainActivity extends Activity {
                             "This app requires Google Play Services. Please install " +
                                     "Google Play Services on your device and relaunch this app.");
                 } else {
-                    getResultsFromApi();
+                    createCredential();
                 }
                 break;
             case REQUEST_ACCOUNT_PICKER:
@@ -219,15 +203,15 @@ public class MainActivity extends Activity {
                         SharedPreferences.Editor editor = settings.edit();
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();
-                        // add to GoogleAccountCredential
-                        mCredential.setSelectedAccountName(accountName);
-                        getResultsFromApi();
+
+                        //mCredential.setSelectedAccountName(accountName);
+                        createCredential();
                     }
                 }
                 break;
             case REQUEST_AUTHORIZATION:
                 if (resultCode == RESULT_OK) {
-                    getResultsFromApi();
+                    createCredential();
                 }
                 break;
         }
@@ -312,7 +296,6 @@ public class MainActivity extends Activity {
         }
     }
 
-
     /**
      * Display an error dialog showing that Google Play Services is missing
      * or out of date.
@@ -328,6 +311,6 @@ public class MainActivity extends Activity {
                 REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
     }
-
+    //endregion
 
 }
