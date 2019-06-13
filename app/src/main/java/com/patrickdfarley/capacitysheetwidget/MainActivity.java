@@ -43,7 +43,6 @@ public class MainActivity extends Activity {
     static final int REQUEST_AUTHORIZATION = 1001;
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
-    static final int REQUEST_PERMISSION_READ_CONTACTS = 1004;
 
     private static final String TAG = "MainActivity";
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
@@ -62,7 +61,8 @@ public class MainActivity extends Activity {
 
         setContentView(R.layout.activity_main);
 
-        // Initialize credentials and service object.
+        // Initialize credentials and service object. GoogleAccountCredential is a thread-safe
+        // helper class for OAuth 2.0 for accessing protected resources using an access token.
         mCredential = null;
         tempCredential = GoogleAccountCredential.usingOAuth2(
                 getApplicationContext(), Arrays.asList(SCOPES))
@@ -73,7 +73,8 @@ public class MainActivity extends Activity {
 
     public void onContinueButtonClicked(View view){
         if (mCredential != null){
-            new MakeRequestTask(mCredential, this).execute();
+            //new MakeRequestTask(mCredential, this).execute();
+            new GetSheetDataTask(mCredential, this).execute();
         } else {
             Log.d(TAG, "the credential is not yet created.");
         }
@@ -86,7 +87,8 @@ public class MainActivity extends Activity {
      * Attempt to call the API, after verifying that all the preconditions are
      * satisfied. The preconditions are: Google Play Services installed, an
      * account was selected and the device currently has online access. If any
-     * of the preconditions are not satisfied, the app will prompt the user as
+     * of the preconditions are not satisfied, the method will exit and the
+     * app will prompt the user as
      * appropriate.
      */
     private void createCredential() {
@@ -105,25 +107,25 @@ public class MainActivity extends Activity {
         }
     }
 
-    public void checkAccounts(){
-        String ans = isGoogleAccountPresent();
-        Log.d(TAG,"google accounts?: " + ans);
-    }
+//    public void checkAccounts(){
+//        String ans = isGoogleAccountPresent();
+//        Log.d(TAG,"google accounts?: " + ans);
+//    }
 
-    public String isGoogleAccountPresent() {
-
-        String toReturn = "";
-        AccountManager manager = AccountManager.get(this);
-        for(Account account : manager.getAccounts()) {
-            toReturn += account.toString() + " ";
-        }
-        if (EasyPermissions.hasPermissions(this, Manifest.permission.GET_ACCOUNTS)){
-            toReturn += " has permission";
-        } else {
-            toReturn += " does not have permission";
-        }
-        return toReturn;
-    }
+//    public String isGoogleAccountPresent() {
+//
+//        String toReturn = "";
+//        AccountManager manager = AccountManager.get(this);
+//        for(Account account : manager.getAccounts()) {
+//            toReturn += account.toString() + " ";
+//        }
+//        if (EasyPermissions.hasPermissions(this, Manifest.permission.GET_ACCOUNTS)){
+//            toReturn += " has permission";
+//        } else {
+//            toReturn += " does not have permission";
+//        }
+//        return toReturn;
+//    }
 
     /**
      * Attempts to set the account used with the API credentials. If an account
