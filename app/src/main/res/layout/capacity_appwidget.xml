@@ -20,14 +20,40 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="2"
-            android:orientation="vertical"></LinearLayout>
+            android:orientation="vertical">
+
+            <include layout="@layout/category_item" />
+            <include layout="@layout/category_item" />
+            <include layout="@layout/category_item" />
+            <include layout="@layout/category_item" />
+            <include layout="@layout/category_item" />
+            <include layout="@layout/category_item" />
+            <include layout="@layout/category_item" />
+            <include layout="@layout/category_item" />
+
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/ButtonsList"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:orientation="vertical"></LinearLayout>
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/OneButton"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:text="1"/>
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:text="5"/>
+
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>
