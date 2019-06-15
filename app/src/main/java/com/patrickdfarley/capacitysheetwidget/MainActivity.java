@@ -1,6 +1,7 @@
 package com.patrickdfarley.capacitysheetwidget;
 
 import android.accounts.Account;
+import android.appwidget.AppWidgetManager;
 import android.os.Bundle;
 
 import com.google.api.services.sheets.v4.SheetsScopes;
@@ -25,6 +26,7 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import java.util.Arrays;
@@ -61,6 +63,9 @@ public class MainActivity extends Activity {
 
         setContentView(R.layout.activity_main);
 
+
+
+
         // Initialize credentials and service object. GoogleAccountCredential is a thread-safe
         // helper class for OAuth 2.0 for accessing protected resources using an access token.
         mCredential = null;
@@ -73,11 +78,41 @@ public class MainActivity extends Activity {
 
     public void onContinueButtonClicked(View view){
         if (mCredential != null){
-            //new MakeRequestTask(mCredential, this).execute();
-            new GetSheetDataTask(mCredential, this).execute();
+
+
+            // get ID info on the widget that launched this activity
+            Intent intent = getIntent();
+            int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
+            Bundle extras = intent.getExtras();
+            if (extras != null) {
+                appWidgetId = extras.getInt(
+                        AppWidgetManager.EXTRA_APPWIDGET_ID,
+                        AppWidgetManager.INVALID_APPWIDGET_ID);
+            }
+            // update the appwidget views with dummy values
+            AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
+            RemoteViews views = new RemoteViews(this.getPackageName(),
+                    R.layout.capacity_appwidget);
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+
+
+            //new asynctask, set it up and execute. This will update the widget again when it completes
+            GetSheetDataTask getSheetDataTask = new GetSheetDataTask(mCredential, this);
+            getSheetDataTask.appWidgetManager = appWidgetManager;
+            getSheetDataTask.appWidgetID = appWidgetId;
+            getSheetDataTask.remoteViews = views;
+            getSheetDataTask.execute();
+
+            // finish this activity
+            Intent resultValue = new Intent();
+            resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            setResult(RESULT_OK, resultValue);
+            finish();
+
         } else {
             Log.d(TAG, "the credential is not yet created.");
         }
+
     }
 
 

@@ -1,10 +1,15 @@
 package com.patrickdfarley.capacitysheetwidget;
 
 import android.app.ProgressDialog;
+import android.appwidget.AppWidgetManager;
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.RemoteViews;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
@@ -19,7 +24,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GetSheetDataTask extends AsyncTask<Void, Void, List<String>> {
+import static android.app.Activity.RESULT_OK;
+
+public class GetSheetDataTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
     private com.google.api.services.sheets.v4.Sheets mService = null;
     private Exception mLastError = null;
@@ -27,6 +34,10 @@ public class GetSheetDataTask extends AsyncTask<Void, Void, List<String>> {
 
     private ProgressDialog mProgress;
     private Context context;
+
+    public AppWidgetManager appWidgetManager;
+    public int appWidgetID;
+    public RemoteViews remoteViews;
 
     // class constructor
     GetSheetDataTask(GoogleAccountCredential credential, Context context) {
@@ -52,7 +63,7 @@ public class GetSheetDataTask extends AsyncTask<Void, Void, List<String>> {
      * @param params no parameters needed for this task.
      */
     @Override
-    protected List<String> doInBackground(Void... params) {
+    protected List<List<Object>> doInBackground(Void... params) {
         try {
             return getSheetData();
         } catch (Exception e) {
@@ -79,29 +90,38 @@ public class GetSheetDataTask extends AsyncTask<Void, Void, List<String>> {
      * @return relevant cell data
      * @throws IOException
      */
-    private List<String> getSheetData() throws IOException {
+    private List<List<Object>> getSheetData() throws IOException {
         String spreadsheetId = "1Vg7gsEEl2sK8m9EXCNQmR60JkkMRCtwenWAJpuZuL5o";
         String range = "Spring / Summer!A1:AB13";
-        List<String> results = new ArrayList<String>();
         ValueRange response = this.mService.spreadsheets().values()
                 .get(spreadsheetId, range)
                 .execute();
         List<List<Object>> responseData = response.getValues();
-        if (responseData != null) {
-            results.add("Value is: " + responseData.get(0).get(0));
 
-        }
-        return results;
+        // TODO check for successful response and handle unsuccessful
+        return responseData;
     }
 
+    // runs in the UI thread: update UI
     @Override
-    protected void onPostExecute(List<String> output) {
+    protected void onPostExecute(List<List<Object>> output) {
         mProgress.hide();
         if (output == null || output.size() == 0) {
             Log.d(TAG, "No results returned.");
         } else {
-            output.add(0, "Data retrieved using the Google Sheets API:");
+
             Log.d(TAG, TextUtils.join("\n", output));
+
+            RemoteViews newView = remoteViews;
+            newView.setTextViewText(R.id.OneButton,"ass");
+
+            appWidgetManager.updateAppWidget(appWidgetID,newView);
         }
+    }
+
+
+    private RemoteViews updateRemoteViews(RemoteViews originalView){
+
+        return originalView;
     }
 }
