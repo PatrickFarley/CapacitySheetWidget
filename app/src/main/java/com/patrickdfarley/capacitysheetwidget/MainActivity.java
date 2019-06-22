@@ -26,8 +26,10 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Arrays;
 
@@ -46,10 +48,13 @@ public class MainActivity extends Activity {
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
 
+    static final String MYPREFERENCES = "MyPrefs";
     private static final String TAG = "MainActivity";
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
-
     private static final String[] SCOPES = { SheetsScopes.SPREADSHEETS_READONLY, SheetsScopes.SPREADSHEETS };
+
+    SharedPreferences sharedpreferences;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +65,10 @@ public class MainActivity extends Activity {
         mProgress = new ProgressDialog(this);
         mProgress.setMessage("Calling Google Sheets API ...");
         mContinueButton = findViewById(R.id.enterInfoButton);
+
+        sharedpreferences = getSharedPreferences(MYPREFERENCES, Context.MODE_PRIVATE);
+
+
 
         setContentView(R.layout.activity_main);
 
@@ -77,31 +86,49 @@ public class MainActivity extends Activity {
     }
 
     public void onContinueButtonClicked(View view){
+
+        // check inputs
+        if (((EditText)findViewById(R.id.spreadsheetIdEditText)).getText().equals("") ||
+                ((EditText)findViewById(R.id.sheetNameEditText)).getText().equals("") ||
+                ((EditText)findViewById(R.id.dataRangeEditText)).getText().equals("")){
+            Toast toast = Toast.makeText(this, "Enter a value in each field",Toast.LENGTH_SHORT);
+            toast.show();
+            return;
+        }
+
+        // store data in shared preferences
+        SharedPreferences.Editor editor = sharedpreferences.edit();
+        editor.putString("SpreadsheetId",((EditText)findViewById(R.id.spreadsheetIdEditText)).getText().toString());
+        editor.putString("SheetName",((EditText)findViewById(R.id.sheetNameEditText)).getText().toString());
+        editor.putString("DataRange",((EditText)findViewById(R.id.dataRangeEditText)).getText().toString());
+        editor.commit();
+
+        // get ID info on the widget that launched this activity, so we can return to it
+        Intent intent = getIntent();
+        int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
+        Bundle extras = intent.getExtras();
+        if (extras != null) {
+            appWidgetId = extras.getInt(
+                    AppWidgetManager.EXTRA_APPWIDGET_ID,
+                    AppWidgetManager.INVALID_APPWIDGET_ID);
+        }
+
+        // get info needed to interact with the widget
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
+        RemoteViews views = new RemoteViews(this.getPackageName(),
+                R.layout.capacity_appwidget);
+        // update the appwidget views with default values
+        // TODO: Is this necessary?
+        appWidgetManager.updateAppWidget(appWidgetId, views);
+
         if (mCredential != null){
 
-
-            // get ID info on the widget that launched this activity
-            Intent intent = getIntent();
-            int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
-            Bundle extras = intent.getExtras();
-            if (extras != null) {
-                appWidgetId = extras.getInt(
-                        AppWidgetManager.EXTRA_APPWIDGET_ID,
-                        AppWidgetManager.INVALID_APPWIDGET_ID);
-            }
-            // update the appwidget views with dummy values
-            AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
-            RemoteViews views = new RemoteViews(this.getPackageName(),
-                    R.layout.capacity_appwidget);
-            appWidgetManager.updateAppWidget(appWidgetId, views);
-
-
             //new asynctask, set it up and execute. This will update the widget again when it completes
-            GetSheetDataTask getSheetDataTask = new GetSheetDataTask(mCredential, this);
-            getSheetDataTask.appWidgetManager = appWidgetManager;
-            getSheetDataTask.appWidgetID = appWidgetId;
-            getSheetDataTask.remoteViews = views;
-            getSheetDataTask.execute();
+            InitTask initTask = new InitTask(mCredential, this);
+            initTask.appWidgetManager = appWidgetManager;
+            initTask.appWidgetID = appWidgetId;
+            initTask.remoteViews = views;
+            initTask.execute();
 
             // finish this activity
             Intent resultValue = new Intent();
@@ -110,7 +137,8 @@ public class MainActivity extends Activity {
             finish();
 
         } else {
-            Log.d(TAG, "the credential is not yet created.");
+            Log.d(TAG, "The credential is not yet created.");
+            //TODO: should the activity finish here, or stay open?
         }
 
     }
