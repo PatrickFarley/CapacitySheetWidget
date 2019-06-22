@@ -30,7 +30,7 @@ public class GetSheetDataTask extends AsyncTask<Void, Void, List<List<Object>>> 
 
     private com.google.api.services.sheets.v4.Sheets mService = null;
     private Exception mLastError = null;
-    private static final String TAG = "MakeRequestTask";
+    private static final String TAG = "GetSheetDataTask";
 
     private ProgressDialog mProgress;
     private Context context;
@@ -112,9 +112,12 @@ public class GetSheetDataTask extends AsyncTask<Void, Void, List<List<Object>>> 
 
             Log.d(TAG, TextUtils.join("\n", output));
 
+            // create an updated RemoteViews
             RemoteViews newView = remoteViews;
-            newView.setTextViewText(R.id.OneButton,"ass");
 
+            newView.setTextViewText(R.id.OneButton,"ass");
+            newView.setInt(R.id.CatsList,"MethodName",1);
+            // update the app widget
             appWidgetManager.updateAppWidget(appWidgetID,newView);
         }
     }
