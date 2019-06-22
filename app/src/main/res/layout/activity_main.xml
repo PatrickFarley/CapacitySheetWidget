@@ -30,7 +30,7 @@
             android:textAppearance="@style/TextAppearance.AppCompat.Menu"/>
 
         <EditText
-            android:id="@+id/spreadsheetEditText"
+            android:id="@+id/spreadsheetIdEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -55,7 +55,7 @@
             />
 
         <EditText
-            android:id="@+id/sheetEditText"
+            android:id="@+id/sheetNameEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
