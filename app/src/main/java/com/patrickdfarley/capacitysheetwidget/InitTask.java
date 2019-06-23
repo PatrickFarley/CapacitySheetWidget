@@ -1,9 +1,10 @@
 package com.patrickdfarley.capacitysheetwidget;
-
 import android.app.ProgressDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -19,7 +20,7 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 
 import java.io.IOException;
 import java.util.List;
-
+import java.util.Scanner;
 
 public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
@@ -29,16 +30,23 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
     private ProgressDialog mProgress;
     private Context context;
+    private SharedPreferences sharedPreferences;
 
     public AppWidgetManager appWidgetManager;
     public int appWidgetID;
     public RemoteViews remoteViews;
 
-    // class constructor
+    /**
+     * Class constructor
+     * @param credential The GoogleAccountCredential, already prepared.
+     * @param context The context of the calling class.
+     */
     InitTask(GoogleAccountCredential credential, Context context) {
         HttpTransport transport = AndroidHttp.newCompatibleTransport();
         JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
         this.context = context;
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         mProgress = new ProgressDialog(context);
         mProgress.setMessage("doing..");
@@ -47,12 +55,12 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
         mProgress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgress.setCancelable(true);
 
+        // initialize the Sheets service
         sheetsService = new Sheets.Builder(
                 transport, jsonFactory, credential)
                 .setApplicationName("@string/app_name")
                 .build();
     }
-
 
     /**
      * Background task to call Google Sheets API.
@@ -82,13 +90,18 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
 
     /**
-     * Fetches the sheet data
+     * Fetches the spreadsheet data for a specific range
      * @return relevant cell data
      * @throws IOException
      */
     private List<List<Object>> getSheetData() throws IOException {
-        String spreadsheetId = "1Vg7gsEEl2sK8m9EXCNQmR60JkkMRCtwenWAJpuZuL5o";
-        String range = "Spring / Summer!A1:AB13";
+
+        String spreadsheetId = sharedPreferences.getString("SpreadsheetId","");
+        String sheetName = sharedPreferences.getString("SheetName","");
+        // TODO: The A1 range needs to be manually expanded here.
+        String dataRange = sharedPreferences.getString("DataRange","");
+
+        String range = sheetName + "!" + dataRange;
         ValueRange response = this.sheetsService.spreadsheets().values()
                 .get(spreadsheetId, range)
                 .execute();
@@ -105,22 +118,33 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
         if (output == null || output.size() == 0) {
             Log.d(TAG, "No results returned.");
         } else {
-
             Log.d(TAG, TextUtils.join("\n", output));
 
             // create an updated RemoteViews
             RemoteViews newView = remoteViews;
+            int currentWeekIndex = getWeekIndex(output);
 
+            // TODO: figure out how many cateogry rows to add
+            // add category row values:
+            for(int i=3;i<7;i++){
+                RemoteViews childView = new RemoteViews(context.getPackageName(),R.layout.category_item);
+                childView.setTextViewText(R.id.CatAmount,(String) output.get(i).get(currentWeekIndex));
+                newView.addView(R.id.CatsList, childView);
+            }
             newView.setTextViewText(R.id.OneButton,"ass");
-            newView.setInt(R.id.CatsList,"MethodName",1);
+
             // update the app widget
             appWidgetManager.updateAppWidget(appWidgetID,newView);
         }
     }
 
 
-    private RemoteViews updateRemoteViews(RemoteViews originalView){
+    private int getWeekIndex(List<List<Object>> output){
+        Scanner sc = new Scanner((String) output.get(0).get(0));
+        double weekValue = sc.nextDouble();
 
-        return originalView;
+        int weekNumber = (int)(Math.ceil(weekValue));
+        int currentWeekIndex = weekNumber + 1;
+        return currentWeekIndex;
     }
 }

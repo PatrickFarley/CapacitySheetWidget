@@ -22,14 +22,7 @@
             android:layout_weight="2"
             android:orientation="vertical">
 
-            <include layout="@layout/category_item" />
-            <include layout="@layout/category_item" />
-            <include layout="@layout/category_item" />
-            <include layout="@layout/category_item" />
-            <include layout="@layout/category_item" />
-            <include layout="@layout/category_item" />
-            <include layout="@layout/category_item" />
-            <include layout="@layout/category_item" />
+            <!-- This is to be populated by category_item elements programmatically -->
 
         </LinearLayout>
 

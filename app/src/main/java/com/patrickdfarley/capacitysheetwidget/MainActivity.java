@@ -22,6 +22,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
@@ -66,7 +67,7 @@ public class MainActivity extends Activity {
         mProgress.setMessage("Calling Google Sheets API ...");
         mContinueButton = findViewById(R.id.enterInfoButton);
 
-        sharedpreferences = getSharedPreferences(MYPREFERENCES, Context.MODE_PRIVATE);
+        sharedpreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
 
 
@@ -101,7 +102,7 @@ public class MainActivity extends Activity {
         editor.putString("SpreadsheetId",((EditText)findViewById(R.id.spreadsheetIdEditText)).getText().toString());
         editor.putString("SheetName",((EditText)findViewById(R.id.sheetNameEditText)).getText().toString());
         editor.putString("DataRange",((EditText)findViewById(R.id.dataRangeEditText)).getText().toString());
-        editor.commit();
+        editor.apply();
 
         // get ID info on the widget that launched this activity, so we can return to it
         Intent intent = getIntent();
@@ -130,7 +131,7 @@ public class MainActivity extends Activity {
             initTask.remoteViews = views;
             initTask.execute();
 
-            // finish this activity
+            // and finish this activity
             Intent resultValue = new Intent();
             resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
             setResult(RESULT_OK, resultValue);
@@ -138,7 +139,7 @@ public class MainActivity extends Activity {
 
         } else {
             Log.d(TAG, "The credential is not yet created.");
-            //TODO: should the activity finish here, or stay open?
+            //TODO: should the activity finish in this case, or stay open?
         }
 
     }

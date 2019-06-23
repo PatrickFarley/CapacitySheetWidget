@@ -37,7 +37,9 @@
             android:ems="10"
             android:hint="paste in your spreadsheet id"
             android:inputType="text"
-            android:padding="8dp" />
+            android:padding="8dp"
+
+            android:text="1Vg7gsEEl2sK8m9EXCNQmR60JkkMRCtwenWAJpuZuL5o"/>
     </LinearLayout>
 
     <LinearLayout
@@ -62,7 +64,10 @@
             android:ems="10"
             android:hint="enter your sheet name"
             android:inputType="text"
-            android:padding="8dp" />
+            android:padding="8dp"
+
+            android:text="Spring / Summer"
+            />
 
     </LinearLayout>
 
@@ -86,9 +91,11 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:ems="10"
-            android:hint='example: "C4:AB11"'
+            android:hint="example: C4:AB11"
             android:inputType="text"
-            android:padding="8dp" />
+            android:padding="8dp"
+
+            android:text="A1:AB11"/>
 
     </LinearLayout>
 
