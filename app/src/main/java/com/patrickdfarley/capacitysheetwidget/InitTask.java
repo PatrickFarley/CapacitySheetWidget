@@ -135,10 +135,10 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
                 RemoteViews childView = new RemoteViews(context.getPackageName(),R.layout.category_item);
                 String catAmount = output.get(i).size()>currentWeekIndex ? (String) (output.get(i).get(currentWeekIndex)) : "";
                 childView.setTextViewText(R.id.CatAmount, catAmount);
+                childView.setTextViewText(R.id.CatName,(String) output.get(i).get(0));
+
                 newView.addView(R.id.CatsList, childView);
             }
-            // sanity test
-            newView.setTextViewText(R.id.OneButton,"ass");
 
             // update the app widget
             appWidgetManager.updateAppWidget(appWidgetID,newView);
