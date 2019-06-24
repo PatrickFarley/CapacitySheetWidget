@@ -91,11 +91,11 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:ems="10"
-            android:hint="example: C4:AB11"
+            android:hint="example: A4:AB11"
             android:inputType="text"
             android:padding="8dp"
 
-            android:text="A1:AB11"/>
+            android:text="A4:AB11"/>
 
     </LinearLayout>
 
