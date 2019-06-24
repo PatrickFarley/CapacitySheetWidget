@@ -15,15 +15,16 @@
         android:layout_weight="3"
 
         android:textSize="20dp"
-        android:text="One"/>
+        android:text="#defaultVal"/>
 
     <TextView
         android:id="@+id/CatAmount"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="3"
+        android:textAlignment="center"
 
-        android:textSize="50dp"
+        android:textSize="20dp"
         android:text="45"/>
 
 </LinearLayout>
