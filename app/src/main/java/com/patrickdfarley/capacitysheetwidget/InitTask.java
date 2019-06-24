@@ -20,7 +20,6 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Scanner;
 
 public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
@@ -98,12 +97,14 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
         String spreadsheetId = sharedPreferences.getString("SpreadsheetId","");
         String sheetName = sharedPreferences.getString("SheetName","");
-        // TODO: The A1 range needs to be manually expanded here.
         String dataRange = sharedPreferences.getString("DataRange","");
 
-        String range = sheetName + "!" + dataRange;
+        // Manually expand the range here: we want the first rows too.
+        final String finalRange = "'" + sheetName + "'!" + dataRange.replaceFirst("\\d+","1");;
+        Log.d(TAG,finalRange);
+
         ValueRange response = this.sheetsService.spreadsheets().values()
-                .get(spreadsheetId, range)
+                .get(spreadsheetId, finalRange)
                 .execute();
         List<List<Object>> responseData = response.getValues();
 
@@ -122,15 +123,21 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
             // create an updated RemoteViews
             RemoteViews newView = remoteViews;
-            int currentWeekIndex = getWeekIndex(output);
+            int currentWeekIndex = getCurrentWeekIndex(output);
 
-            // TODO: figure out how many cateogry rows to add
-            // add category row values:
-            for(int i=3;i<7;i++){
+            // figure out how many category rows to add:
+            //String dataRange = sharedPreferences.getString("DataRange","");
+            int categoryCount = getRowCount(output);
+
+            // add category amounts:
+            int offset = 3; //TODO: this should be saved more carefully
+            for(int i=offset;i<categoryCount+offset;i++){
                 RemoteViews childView = new RemoteViews(context.getPackageName(),R.layout.category_item);
-                childView.setTextViewText(R.id.CatAmount,(String) output.get(i).get(currentWeekIndex));
+                String catAmount = output.get(i).size()>currentWeekIndex ? (String) (output.get(i).get(currentWeekIndex)) : "";
+                childView.setTextViewText(R.id.CatAmount, catAmount);
                 newView.addView(R.id.CatsList, childView);
             }
+            // sanity test
             newView.setTextViewText(R.id.OneButton,"ass");
 
             // update the app widget
@@ -138,13 +145,44 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
         }
     }
 
+    // region Helper Methods
 
-    private int getWeekIndex(List<List<Object>> output){
-        Scanner sc = new Scanner((String) output.get(0).get(0));
-        double weekValue = sc.nextDouble();
+    private int getCurrentWeekIndex(List<List<Object>> output){
+//        Scanner sc = new Scanner((String) output.get(0).get(0));
+//        double weekValue = sc.nextDouble();
 
+        double weekValue = Double.parseDouble((String) output.get(0).get(0));
         int weekNumber = (int)(Math.ceil(weekValue));
         int currentWeekIndex = weekNumber + 1;
+
+        Log.d(TAG, "" + currentWeekIndex);
         return currentWeekIndex;
     }
+
+    private int getRowCount(List<List<Object>> responseData){
+//        String[] dataStringsArray = dataRangeString.split(":");
+//        String rangeStartString = dataStringsArray[0];
+//        String rangeEndString = dataStringsArray[1];
+//
+//        int startRow = Integer.parseInt(stripNonDigits(rangeStartString));
+//        int endRow = Integer.parseInt(stripNonDigits(rangeEndString));
+//
+//        return endRow - startRow + 1;
+
+        return responseData.size() - 3;
+    }
+
+    private String stripNonDigits(final CharSequence input){
+        final StringBuilder sb = new StringBuilder(input.length());
+        for(int i = 0; i < input.length(); i++){
+            final char c = input.charAt(i);
+            if(c > 47 && c < 58){
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    // endregion
+
 }

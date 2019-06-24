@@ -114,12 +114,13 @@ public class MainActivity extends Activity {
                     AppWidgetManager.INVALID_APPWIDGET_ID);
         }
 
-        // get info needed to interact with the widget
+        // get info needed to interact with the widget, including a default RemoteViews of the
+        // widget's layout
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
         RemoteViews views = new RemoteViews(this.getPackageName(),
                 R.layout.capacity_appwidget);
         // update the appwidget views with default values
-        // TODO: Is this necessary?
+        // TODO: Is this necessary? This is (if successful) done by the following AsyncTask
         appWidgetManager.updateAppWidget(appWidgetId, views);
 
         if (mCredential != null){
