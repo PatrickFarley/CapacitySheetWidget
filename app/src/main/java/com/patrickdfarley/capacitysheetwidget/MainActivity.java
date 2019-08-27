@@ -42,7 +42,6 @@ public class MainActivity extends Activity {
     GoogleAccountCredential tempCredential;
     TextView mOutputText;
     ProgressDialog mProgress;
-    Button mContinueButton;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
@@ -60,21 +59,15 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         Log.d(TAG,"onCreate");
+
         mOutputText = findViewById(R.id.sampleTextView);
         mProgress = new ProgressDialog(this);
         mProgress.setMessage("Calling Google Sheets API ...");
-        mContinueButton = findViewById(R.id.enterInfoButton);
 
         sharedpreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-
-
         setContentView(R.layout.activity_main);
-
-
-
 
         // Initialize credentials and service object. GoogleAccountCredential is a thread-safe
         // helper class for OAuth 2.0 for accessing protected resources using an access token.
@@ -167,7 +160,7 @@ public class MainActivity extends Activity {
         } else if (! isDeviceOnline()) {
             mOutputText.setText("No network connection available.");
         } else {
-            Log.d(TAG, "making request task...");
+            Log.d(TAG, "Credential is ready");
             mCredential = tempCredential;
         }
     }
@@ -209,13 +202,12 @@ public class MainActivity extends Activity {
 
             String accountName = getPreferences(Context.MODE_PRIVATE)
                     .getString(PREF_ACCOUNT_NAME, null);
+            // if an account was stored in the preferences
             if (accountName != null) {
-                // if an account was stored in the preferences
 
 //                GoogleAccountManager mgr = new GoogleAccountManager(this);
 //                Account[] accountList = mgr.getAccounts();
                 tempCredential.setSelectedAccountName(accountName);
-                //mCredential.setSelectedAccount(new Account("pf4rley7@gmail.com", "com.google"));
                 createCredential();
             } else {
                 // when we don't have an account stored in preferences
