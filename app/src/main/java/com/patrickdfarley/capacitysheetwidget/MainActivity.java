@@ -1,6 +1,5 @@
 package com.patrickdfarley.capacitysheetwidget;
 
-import android.accounts.Account;
 import android.appwidget.AppWidgetManager;
 import android.os.Bundle;
 
@@ -26,7 +25,6 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RemoteViews;
 import android.widget.TextView;
@@ -59,7 +57,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG,"onCreate");
+        Log.d(TAG,"onCreate called");
 
         mOutputText = findViewById(R.id.sampleTextView);
         mProgress = new ProgressDialog(this);
@@ -75,12 +73,11 @@ public class MainActivity extends Activity {
         tempCredential = GoogleAccountCredential.usingOAuth2(
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
-
         createCredential();
     }
 
     public void onContinueButtonClicked(View view){
-
+        Log.d(TAG,"ContinueButton clicked");
         // check inputs
         if (((EditText)findViewById(R.id.spreadsheetIdEditText)).getText().equals("") ||
                 ((EditText)findViewById(R.id.sheetNameEditText)).getText().equals("") ||
@@ -113,7 +110,7 @@ public class MainActivity extends Activity {
         RemoteViews views = new RemoteViews(this.getPackageName(),
                 R.layout.capacity_appwidget);
         // update the appwidget views with default values
-        // TODO: Is this necessary? This is (if successful) done by the following AsyncTask
+        // TODO: Is this line necessary? This is (if successful) done by the following AsyncTask
         appWidgetManager.updateAppWidget(appWidgetId, views);
 
         if (mCredential != null){
@@ -121,7 +118,7 @@ public class MainActivity extends Activity {
             //new asynctask, set it up and execute. This will update the widget again when it completes
             InitTask initTask = new InitTask(mCredential, this);
             initTask.appWidgetManager = appWidgetManager;
-            initTask.appWidgetID = appWidgetId;
+            initTask.appWidgetId = appWidgetId;
             initTask.remoteViews = views;
             initTask.execute();
 
@@ -150,7 +147,7 @@ public class MainActivity extends Activity {
      * appropriate.
      */
     private void createCredential() {
-        Log.d(TAG, "get results called");
+        Log.d(TAG, "createCredential called");
         //checkAccounts();
 
         if (! isGooglePlayServicesAvailable()) {
@@ -200,8 +197,7 @@ public class MainActivity extends Activity {
         if (EasyPermissions.hasPermissions(
                 this, Manifest.permission.GET_ACCOUNTS, Manifest.permission.READ_CONTACTS)) {
 
-            String accountName = getPreferences(Context.MODE_PRIVATE)
-                    .getString(PREF_ACCOUNT_NAME, null);
+            String accountName = PreferenceManager.getDefaultSharedPreferences(this).getString(PREF_ACCOUNT_NAME, null);
             // if an account was stored in the preferences
             if (accountName != null) {
 
@@ -258,7 +254,7 @@ public class MainActivity extends Activity {
                     if (accountName != null) {
                         // add to preferences
                         SharedPreferences settings =
-                                getPreferences(Context.MODE_PRIVATE);
+                                PreferenceManager.getDefaultSharedPreferences(this);
                         SharedPreferences.Editor editor = settings.edit();
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();

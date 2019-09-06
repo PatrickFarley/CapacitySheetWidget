@@ -1,8 +1,10 @@
 package com.patrickdfarley.capacitysheetwidget;
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.os.AsyncTask;
@@ -39,7 +41,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
     private int categoryCount;
 
     public AppWidgetManager appWidgetManager;
-    public int appWidgetID;
+    public int appWidgetId;
     public RemoteViews remoteViews;
 
     /**
@@ -117,7 +119,6 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
         // create A1 string for use in Sheets API lookup
         final String finalRange = "'" + sheetName + "'!" + Coords2A1(dataRangePoints);
         Log.d(TAG,"finalRange: " + finalRange);
-        Log.d(TAG,"sheet id: " + spreadsheetId);
         ValueRange response = this.sheetsService.spreadsheets().values()
                 .get(spreadsheetId, finalRange)
                 .execute();
@@ -157,8 +158,18 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
             builder.append(" ");
             builder.append(responseData.get(OFFSETTOP+categoryCount+OFFSETBOTTOM - 1).get(currentWeekIndex));
             newView.setTextViewText(R.id.DisplayBar,builder);
+
+            // assign onClick listeners:
+            Intent intent = new Intent(context, CapacityWidgetProvider.class);
+            intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+            intent.putExtra( AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[] { appWidgetId } ); // this will only pass the given app widget ID back to onUpdate.
+
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(context,0, intent, PendingIntent.FLAG_UPDATE_CURRENT); //You need to specify a proper flag for the intent. Or else the intent will become deleted.
+            newView.setOnClickPendingIntent(R.id.OneButton, pendingIntent);
+
+
             // update the app widget
-            appWidgetManager.updateAppWidget(appWidgetID,newView);
+            appWidgetManager.updateAppWidget(appWidgetId,newView);
         }
     }
 
