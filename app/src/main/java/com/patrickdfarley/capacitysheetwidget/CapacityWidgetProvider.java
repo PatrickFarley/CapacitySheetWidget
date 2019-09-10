@@ -66,14 +66,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
             mCredential.setSelectedAccountName(accountName);
 
-            // a way to test that the credential is good:
-            try {
-                mCredential.getToken();
-            } catch (Exception e) {
-                Log.d(TAG, e.toString());
-                // TODO: handle
-            }
-
+            // TODO: test if credential is good (or just handle within the InitTask)
 
             // TODO: do this work in a service instead? https://developer.android.com/guide/topics/appwidgets/#AppWidgetProvider
             // do work updating view from spreadsheet

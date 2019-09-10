@@ -22,6 +22,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
+import com.patrickdfarley.capacitysheetwidget.helpers.SharedPreferenceReader;
 
 import java.io.IOException;
 import java.util.List;
@@ -38,7 +39,6 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
     private ProgressDialog mProgress;
     private Context context;
     private SharedPreferences sharedPreferences;
-    private int categoryCount;
 
     public AppWidgetManager appWidgetManager;
     public int appWidgetId;
@@ -76,6 +76,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
      */
     @Override
     protected List<List<Object>> doInBackground(Void... params) {
+
         try {
             return getSheetData();
         } catch (Exception e) {
@@ -104,6 +105,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
      */
     private List<List<Object>> getSheetData() throws IOException {
 
+        // fetch sheet identifier data
         String spreadsheetId = sharedPreferences.getString("SpreadsheetId","");
         String sheetName = sharedPreferences.getString("SheetName","");
         String dataRange = sharedPreferences.getString("DataRange","");
@@ -111,7 +113,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
         // convert to points (row,col)
         Point[] dataRangePoints = A12Coords(dataRange);
         // record category count
-        categoryCount = getRowCount(dataRangePoints);
+        //categoryCount = getRowCount(dataRangePoints);
         // Manually expand the range here: we want the first rows too.
         dataRangePoints[0].x -= OFFSETTOP;
         dataRangePoints[1].x += OFFSETBOTTOM;
@@ -119,10 +121,17 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
         // create A1 string for use in Sheets API lookup
         final String finalRange = "'" + sheetName + "'!" + Coords2A1(dataRangePoints);
         Log.d(TAG,"finalRange: " + finalRange);
-        ValueRange response = this.sheetsService.spreadsheets().values()
-                .get(spreadsheetId, finalRange)
-                .execute();
-        List<List<Object>> responseData = response.getValues();
+
+        // do the sheets API call
+        List<List<Object>> responseData = null;
+        try {
+            ValueRange response = this.sheetsService.spreadsheets().values()
+                    .get(spreadsheetId, finalRange)
+                    .execute();
+            responseData = response.getValues();
+        } catch (Exception e){
+            Log.d(TAG, e.toString());
+        }
 
         // TODO check for successful response and handle unsuccessful
         Log.d(TAG,"responsedata:" + responseData);
@@ -140,17 +149,27 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
             // create an updated RemoteViews
             RemoteViews newView = remoteViews;
+
+            // save category count to preferences
+            int categoryCount = responseData.size() - OFFSETBOTTOM - OFFSETTOP;
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putInt("CatCount",categoryCount);
+
+            // save category data to preferences
+            String catName, catAmount;
             int currentWeekIndex = getCurrentWeekIndex(responseData);
-
-            // add category amounts:
             for(int i = OFFSETTOP; i<categoryCount+ OFFSETTOP; i++){
-                RemoteViews childView = new RemoteViews(context.getPackageName(),R.layout.category_item);
-                String catAmount = responseData.get(i).size()>currentWeekIndex ? (String) (responseData.get(i).get(currentWeekIndex)) : "";
-                childView.setTextViewText(R.id.CatAmount, catAmount);
-                childView.setTextViewText(R.id.CatName,(String) responseData.get(i).get(0));
-
-                newView.addView(R.id.CatsList, childView);
+                catAmount = responseData.get(i).size()>currentWeekIndex ? (String) (responseData.get(i).get(currentWeekIndex)) : "";
+                catName = (String) responseData.get(i).get(0);
+                editor.putString("Cat"+(i-OFFSETTOP),catAmount);
+                editor.putString("Cat"+(i-OFFSETTOP) + "Name",catName);
             }
+            Log.d(TAG, "writing sharedprefs "+sharedPreferences.toString());
+            editor.apply();
+
+            // update our RemoteViews from the newly updated preferences
+            newView = new SharedPreferenceReader(context).ReadCategoryData(newView);
+
             // add week info to DisplayBar:
             StringBuilder builder = new StringBuilder();
             builder.append("week ");
