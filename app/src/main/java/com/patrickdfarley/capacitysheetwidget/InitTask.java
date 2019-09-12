@@ -178,17 +178,34 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
             builder.append(responseData.get(OFFSETTOP+categoryCount+OFFSETBOTTOM - 1).get(currentWeekIndex));
             newView.setTextViewText(R.id.DisplayBar,builder);
 
+
             // assign onClick listeners:
-            Intent intent = new Intent(context, CapacityWidgetProvider.class);
+            Intent intent;
+            PendingIntent pendingIntent;
+            intent = new Intent(context, CapacityWidgetProvider.class);
             intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
             intent.putExtra( AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[] { appWidgetId } ); // this will only pass the given app widget ID back to onUpdate.
+            pendingIntent = PendingIntent.getBroadcast(context,0, intent, PendingIntent.FLAG_UPDATE_CURRENT); //You need to specify a proper flag for the intent. Or else the intent will become deleted.
+            newView.setOnClickPendingIntent(R.id.DisplayBar, pendingIntent);
 
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(context,0, intent, PendingIntent.FLAG_UPDATE_CURRENT); //You need to specify a proper flag for the intent. Or else the intent will become deleted.
-            newView.setOnClickPendingIntent(R.id.OneButton, pendingIntent);
+            int[] entryAmounts = {1,5,20,60,100};
+            int[] entryIds = {R.id.OneButton, R.id.FiveButton, R.id.TwentyButton, R.id.SixtyButton, R.id.OneHundredButton}; //TODO these shouldn't be hardcoded
+            String[] entryActionIds = {
+                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON0",
+                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON1",
+                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON2",
+                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON3",
+                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON4"};
 
-
+            for (int i=0;i<entryAmounts.length;i++) {
+                intent = new Intent(context, CapacityWidgetProvider.class);
+                intent.setAction(entryActionIds[i]); //TODO handle strings correctly
+                intent.putExtra("amount", entryAmounts[i]);
+                pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT); //You need to specify a proper flag for the intent. Or else the intent will become deleted.
+                newView.setOnClickPendingIntent(entryIds[i], pendingIntent);
+            }
             // update the app widget
-            appWidgetManager.updateAppWidget(appWidgetId,newView);
+            appWidgetManager.updateAppWidget(appWidgetId, newView);
         }
     }
 

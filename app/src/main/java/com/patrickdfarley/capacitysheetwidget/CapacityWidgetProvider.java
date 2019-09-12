@@ -7,13 +7,17 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
+import com.patrickdfarley.capacitysheetwidget.helpers.SharedPreferenceReader;
 
 import java.util.Arrays;
 
@@ -29,7 +33,11 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS_READONLY, SheetsScopes.SPREADSHEETS};
     private static final String TAG = "CapacityWidgetProvider";
 
-    public static String ENTRY_BUTTON = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON";
+    public static String ENTRY_BUTTON_0 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON0";
+    public static String ENTRY_BUTTON_1 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON1";
+    public static String ENTRY_BUTTON_2 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON2";
+    public static String ENTRY_BUTTON_3 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON3";
+    public static String ENTRY_BUTTON_4 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON4";
 
     //TODO: probably shouldn't have this both here and in MainActivity
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
@@ -83,21 +91,35 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
         Log.d(TAG, "onReceive called where intent is " + intent.toString());
         super.onReceive(context, intent);
 
-        if (ENTRY_BUTTON.equals(intent.getAction())) {
-            Log.d(TAG, "triggered at least?");
-            // it's an entry-button trigger. Change the view.
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
-            // get all widget IDs
-            AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-            ComponentName widgetComponent = new ComponentName(context.getPackageName(), this.getClass().getName());
-            int[] appWidgetIds = appWidgetManager.getAppWidgetIds(widgetComponent);
-            for (int widgetId : appWidgetIds) {
-                // just fill with a blank view.
-                RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.capacity_appwidget);
+        if (ENTRY_BUTTON_0.equals(intent.getAction()) || ENTRY_BUTTON_1.equals(intent.getAction()) ||
+                ENTRY_BUTTON_2.equals(intent.getAction()) || ENTRY_BUTTON_3.equals(intent.getAction()) ||
+                        ENTRY_BUTTON_4.equals(intent.getAction())){
+            int amount = intent.getIntExtra("amount", 0);
 
-                appWidgetManager.updateAppWidget(widgetId, views);
-            }
+            int toReturn = amount + sharedPreferences.getInt("EntryAmount", 0);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putInt("EntryAmount", toReturn);
+            editor.apply();
 
+            Toast toast = Toast.makeText(context, "amount is " + toReturn, Toast.LENGTH_SHORT);
+            toast.show();
         }
+
+
+
+
     }
+    //region helper methods
+
+    private void updateEntryAmount(SharedPreferences sharedPreferences, int newAmount){
+        // update amount and apply
+        int toReturn = newAmount + sharedPreferences.getInt("EntryAmount", 0);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt("EntryAmount", toReturn);
+        editor.apply();
+    }
+    //endregion
+
 }
