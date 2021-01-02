@@ -35,6 +35,7 @@ import java.util.Arrays;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
+// MainActivity handles the initial data entry for locating the Google sheet.
 public class MainActivity extends Activity {
     GoogleAccountCredential mCredential;
     GoogleAccountCredential tempCredential;
@@ -54,6 +55,8 @@ public class MainActivity extends Activity {
     SharedPreferences sharedpreferences;
 
 
+    // This activity is initially created by the widget itself (called from its manifest/appwieget_info)
+    // This seems to call the widgetmanager's OnUpdate when this method completes.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,6 +67,12 @@ public class MainActivity extends Activity {
         mProgress.setMessage("Calling Google Sheets API ...");
 
         sharedpreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        // here we're immediately setting the initialized flag to false. Won't be set true until
+        // onContinueButtonClicked gets run.
+        SharedPreferences.Editor editor = sharedpreferences.edit();
+        editor.putBoolean("IsInitialized", false);
+        editor.apply();
 
         setContentView(R.layout.activity_main);
 
@@ -78,7 +87,7 @@ public class MainActivity extends Activity {
 
     public void onContinueButtonClicked(View view){
         Log.d(TAG,"ContinueButton clicked");
-        // check inputs
+        // check inputs, handle blank fields
         if (((EditText)findViewById(R.id.spreadsheetIdEditText)).getText().equals("") ||
                 ((EditText)findViewById(R.id.sheetNameEditText)).getText().equals("") ||
                 ((EditText)findViewById(R.id.dataRangeEditText)).getText().equals("")){
@@ -87,14 +96,16 @@ public class MainActivity extends Activity {
             return;
         }
 
-        // store data in shared preferences
+        // store entered form data in shared preferences
         SharedPreferences.Editor editor = sharedpreferences.edit();
         editor.putString("SpreadsheetId",((EditText)findViewById(R.id.spreadsheetIdEditText)).getText().toString());
         editor.putString("SheetName",((EditText)findViewById(R.id.sheetNameEditText)).getText().toString());
         editor.putString("DataRange",((EditText)findViewById(R.id.dataRangeEditText)).getText().toString());
+        editor.putBoolean("IsInitialized", true);
         editor.apply();
 
-        // get ID info on the widget that launched this activity, so we can return to it
+        // get ID info on the widget that launched this activity, so we can return to it.
+        // The ID is contained in the intent that launched this activity.
         Intent intent = getIntent();
         int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
         Bundle extras = intent.getExtras();
@@ -104,25 +115,26 @@ public class MainActivity extends Activity {
                     AppWidgetManager.INVALID_APPWIDGET_ID);
         }
 
-        // get info needed to interact with the widget, including a default RemoteViews of the
-        // widget's layout
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
-        RemoteViews views = new RemoteViews(this.getPackageName(),
-                R.layout.capacity_appwidget);
+
         // update the appwidget views with default values
         // TODO: Is this line necessary? This is (if successful) done by the following AsyncTask
-        appWidgetManager.updateAppWidget(appWidgetId, views);
+        // appWidgetManager.updateAppWidget(appWidgetId, views);
 
         if (mCredential != null){
+            // get info needed to interact with the widget, including a default RemoteViews of the
+            // widget's layout
+            AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
+            RemoteViews views = new RemoteViews(this.getPackageName(),
+                    R.layout.capacity_appwidget);
 
-            //new asynctask, set it up and execute. This will update the widget again when it completes
+            // new asynctask, set it up and execute. This will update the widget again when it completes
             InitTask initTask = new InitTask(mCredential, this);
             initTask.appWidgetManager = appWidgetManager;
             initTask.appWidgetId = appWidgetId;
             initTask.remoteViews = views;
             initTask.execute();
 
-            // and finish this activity
+            // and finish this activity, creating an intent to return.
             Intent resultValue = new Intent();
             resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
             setResult(RESULT_OK, resultValue);
@@ -151,14 +163,17 @@ public class MainActivity extends Activity {
         //checkAccounts();
 
         if (! isGooglePlayServicesAvailable()) {
+            Log.d(TAG, "CC: Google play services was not available. Calling acquireGooglePlayServices()...");
             acquireGooglePlayServices();
         } else if (tempCredential.getSelectedAccountName() == null) {
+            Log.d(TAG, "CC: No selected account. Calling chooseAccount()");
             chooseAccount();
         } else if (! isDeviceOnline()) {
+            Log.d(TAG, "CC: No network connection available.");
             mOutputText.setText("No network connection available.");
         } else {
-            Log.d(TAG, "Credential is ready");
             mCredential = tempCredential;
+            Log.d(TAG, "CC: Credential is ready: "+ mCredential.toString());
         }
     }
 
@@ -213,7 +228,7 @@ public class MainActivity extends Activity {
             }
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
-            // This code runs the first time.
+            // This code runs the first time the app is installed.
             EasyPermissions.requestPermissions(
                     this,
                     "This app needs to access your Google account (via Contacts).",

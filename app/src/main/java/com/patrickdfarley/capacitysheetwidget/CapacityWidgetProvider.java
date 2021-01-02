@@ -33,11 +33,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS_READONLY, SheetsScopes.SPREADSHEETS};
     private static final String TAG = "CapacityWidgetProvider";
 
-    public static String ENTRY_BUTTON_0 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON0";
-    public static String ENTRY_BUTTON_1 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON1";
-    public static String ENTRY_BUTTON_2 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON2";
-    public static String ENTRY_BUTTON_3 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON3";
-    public static String ENTRY_BUTTON_4 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON4";
+    public static String ENTRY_BUTTON = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON";
 
     //TODO: probably shouldn't have this both here and in MainActivity
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
@@ -46,6 +42,13 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     // This should poll the spreadsheet and update the view
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         Log.d(TAG, "onUpdate called");
+
+        if (!PreferenceManager.getDefaultSharedPreferences(context).getBoolean("IsInitialized",false)){
+            Log.d(TAG, "OnUpdate: widget was not initialized. returning...");
+            return;
+        }
+
+
         final int N = appWidgetIds.length;
 
         // Perform this loop procedure for each App Widget that belongs to this provider
@@ -93,33 +96,26 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
-        if (ENTRY_BUTTON_0.equals(intent.getAction()) || ENTRY_BUTTON_1.equals(intent.getAction()) ||
-                ENTRY_BUTTON_2.equals(intent.getAction()) || ENTRY_BUTTON_3.equals(intent.getAction()) ||
-                        ENTRY_BUTTON_4.equals(intent.getAction())){
+        // if it was an entry button click:
+        if (ENTRY_BUTTON.equals(intent.getAction()) ){
+
+            // record the value entered
             int amount = intent.getIntExtra("amount", 0);
 
+            // update the sharedprefs entry amount, by adding the new button's amount.
             int toReturn = amount + sharedPreferences.getInt("EntryAmount", 0);
             SharedPreferences.Editor editor = sharedPreferences.edit();
             editor.putInt("EntryAmount", toReturn);
             editor.apply();
 
-            Toast toast = Toast.makeText(context, "amount is " + toReturn, Toast.LENGTH_SHORT);
+            Toast toast = Toast.makeText(context, "current amount is " + toReturn, Toast.LENGTH_SHORT);
             toast.show();
         }
-
-
-
 
     }
     //region helper methods
 
-    private void updateEntryAmount(SharedPreferences sharedPreferences, int newAmount){
-        // update amount and apply
-        int toReturn = newAmount + sharedPreferences.getInt("EntryAmount", 0);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt("EntryAmount", toReturn);
-        editor.apply();
-    }
+
     //endregion
 
 }

@@ -7,11 +7,11 @@ to track time-based activities and goals.
 ## Process
 
 ### widget view init
-1. MainActivity collects entered sheet information, saves it to preferences.
+1. MainActivity collects entered sheet information, saves it to preferences on ContinueButtonClick.
 1. MainActivity calls the init asynctask.
-1. MainActivity creates return intent, sets it to the widgetId, and finishes.
+1. MainActivity creates a return intent, sets it to the widgetId, and finishes.
 1. init asynctask gets and processes sheet data. Uses saved preferences to correctly make UI decisions. 
-1. in onPostExecute of initasynctask, it calls updateAppWidget to publish the correct UI data (the RemoteViews)
+1. in onPostExecute of InitTask, it calls updateAppWidget to publish the correct UI data (the RemoteViews)
 
 ### Data entry
 a global, trans-widget-ID switch for the different modes. When a data button is pressed, 

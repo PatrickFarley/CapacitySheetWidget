@@ -9,6 +9,7 @@ import android.widget.RemoteViews;
 import com.patrickdfarley.capacitysheetwidget.R;
 
 /**
+ * This class takes a context, gets the sharedprefs from that context
  * Created by pdfarley on 9/9/2019.
  */
 
@@ -38,12 +39,13 @@ public class SharedPreferenceReader {
 
         int categoryCount = sharedPreferences.getInt("CatCount", 0);
         for (int i=0; i<categoryCount; i++){
+            // create a category_item childview
             RemoteViews childView = new RemoteViews(context.getPackageName(),R.layout.category_item);
+            // TODO: the key strings being looked up here: should use a common helper method to construct these strings.
             childView.setTextViewText(R.id.CatAmount, sharedPreferences.getString("Cat"+i,null));
             childView.setTextViewText(R.id.CatName,sharedPreferences.getString("Cat"+i+"Name",null));
-            toReturn.addView(R.id.CatsList, childView);
+            toReturn.addView(R.id.CatsList, childView); // add childview to the CatsList element of the main view.
         }
-
         return toReturn;
     }
 }

@@ -27,6 +27,7 @@ import com.patrickdfarley.capacitysheetwidget.helpers.SharedPreferenceReader;
 import java.io.IOException;
 import java.util.List;
 
+// an async tasks to initially update the view.
 public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
     private com.google.api.services.sheets.v4.Sheets sheetsService;
@@ -50,12 +51,15 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
      * @param context The context of the calling class.
      */
     InitTask(GoogleAccountCredential credential, Context context) {
+        Log.d(TAG, "InitTask created with credential" + credential.toString());
+
         HttpTransport transport = AndroidHttp.newCompatibleTransport();
         JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
         this.context = context;
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
+        // Progress bar stuff you might not use
         mProgress = new ProgressDialog(context);
         mProgress.setMessage("doing..");
         mProgress.setIndeterminate(false);
@@ -76,11 +80,13 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
      */
     @Override
     protected List<List<Object>> doInBackground(Void... params) {
-
+        Log.d(TAG, "doInBackground() called");
         try {
             return getSheetData();
         } catch (Exception e) {
+            Log.d(TAG, e.getCause().toString());
             if (e instanceof UserRecoverableAuthIOException) {
+                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
 //                Intent authorizationIntent = new Intent(this,
 //                        GmailAuthorizationActivity.class)
 //                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -105,49 +111,47 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
      */
     private List<List<Object>> getSheetData() throws IOException {
 
-        // fetch sheet identifier data
+        // fetch sheet identifier data from the sharedprefs
         String spreadsheetId = sharedPreferences.getString("SpreadsheetId","");
         String sheetName = sharedPreferences.getString("SheetName","");
         String dataRange = sharedPreferences.getString("DataRange","");
 
         // convert to points (row,col)
         Point[] dataRangePoints = A12Coords(dataRange);
+
         // record category count
         //categoryCount = getRowCount(dataRangePoints);
-        // Manually expand the range here: we want the first rows too.
-        dataRangePoints[0].x -= OFFSETTOP;
-        dataRangePoints[1].x += OFFSETBOTTOM;
 
-        // create A1 string for use in Sheets API lookup
+        // Manually expand the range here: we want the very first row down to the succes row.
+        dataRangePoints[0].x -= OFFSETTOP; // top-range row coordinate
+        dataRangePoints[1].x += OFFSETBOTTOM; // bottom-range row coordinate
+
+        // create an A1 string for use in Sheets API lookup
         final String finalRange = "'" + sheetName + "'!" + Coords2A1(dataRangePoints);
         Log.d(TAG,"finalRange: " + finalRange);
 
-        // do the sheets API call
+        // sheets API call: get all data within finalRange
         List<List<Object>> responseData = null;
-        try {
-            ValueRange response = this.sheetsService.spreadsheets().values()
-                    .get(spreadsheetId, finalRange)
-                    .execute();
-            responseData = response.getValues();
-        } catch (Exception e){
-            Log.d(TAG, e.toString());
-        }
+        ValueRange response = this.sheetsService.spreadsheets().values()
+                .get(spreadsheetId, finalRange)
+                .execute();
+        responseData = response.getValues();
 
-        // TODO check for successful response and handle unsuccessful
-        Log.d(TAG,"responsedata:" + responseData);
+        Log.d(TAG,"raw response data (whole range): " + responseData);
         return responseData;
     }
 
-    // runs in the UI thread: update UI
+    // This runs in the UI thread: update UI
     @Override
     protected void onPostExecute(List<List<Object>> responseData) {
         mProgress.hide();
         if (responseData == null || responseData.size() == 0) {
-            Log.d(TAG, "No results returned.");
+            Log.d(TAG, "No results returned!");
         } else {
+            // display data again, now newline-delimited
             Log.d(TAG, TextUtils.join("\n", responseData));
 
-            // create an updated RemoteViews
+            // create an updated RemoteViews:
             RemoteViews newView = remoteViews;
 
             // save category count to preferences
@@ -158,63 +162,74 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
             // save category data to preferences
             String catName, catAmount;
             int currentWeekIndex = getCurrentWeekIndex(responseData);
+            // for each category row:
             for(int i = OFFSETTOP; i<categoryCount+ OFFSETTOP; i++){
-                catAmount = responseData.get(i).size()>currentWeekIndex ? (String) (responseData.get(i).get(currentWeekIndex)) : "";
+                // get the category name for that row
                 catName = (String) responseData.get(i).get(0);
+                // get the current week's entered value, assuming it's withing the responseData's range:
+                catAmount = responseData.get(i).size()>currentWeekIndex ? (String) (responseData.get(i).get(currentWeekIndex)) : "";
                 editor.putString("Cat"+(i-OFFSETTOP),catAmount);
                 editor.putString("Cat"+(i-OFFSETTOP) + "Name",catName);
+                Log.d(TAG, "Category" + catName + " and value " + catAmount + " added to shared prefs.");
             }
-            Log.d(TAG, "writing sharedprefs "+sharedPreferences.toString());
             editor.apply();
 
-            // update our RemoteViews from the newly updated preferences
+            // update our RemoteViews category list from the newly updated preferences:
             newView = new SharedPreferenceReader(context).ReadCategoryData(newView);
+
 
             // add week info to DisplayBar:
             StringBuilder builder = new StringBuilder();
             builder.append("week ");
             builder.append(responseData.get(OFFSETTOP-1).get(currentWeekIndex));
             builder.append(" ");
-            builder.append(responseData.get(OFFSETTOP+categoryCount+OFFSETBOTTOM - 1).get(currentWeekIndex));
-            newView.setTextViewText(R.id.DisplayBar,builder);
+            builder.append(responseData.get(OFFSETTOP+categoryCount+OFFSETBOTTOM - 1).get(currentWeekIndex)); // bottom row: success metric
+            newView.setTextViewText(R.id.DisplayBar,builder); // add this string to the DisplayBar element of the view.
 
-
-            // assign onClick listeners:
+        //region Assign OnClickListeners
+            // assign the DisplayBar's onclicklistener to trigger OnUpdate
             Intent intent;
             PendingIntent pendingIntent;
+            // trigger an update for the given widget ID
             intent = new Intent(context, CapacityWidgetProvider.class);
             intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
             intent.putExtra( AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[] { appWidgetId } ); // this will only pass the given app widget ID back to onUpdate.
-            pendingIntent = PendingIntent.getBroadcast(context,0, intent, PendingIntent.FLAG_UPDATE_CURRENT); //You need to specify a proper flag for the intent. Or else the intent will become deleted.
+            //You need to specify a proper flag for the intent. Or else the intent will become deleted.
+            pendingIntent = PendingIntent.getBroadcast(context,0, intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT);
             newView.setOnClickPendingIntent(R.id.DisplayBar, pendingIntent);
 
+            // minute entry buttons:
+            // Each button sends an intent (carrying an integer amount) to trigger a response from the widgetprovider
+            //TODO these shouldn't be hardcoded
             int[] entryAmounts = {1,5,20,60,100};
-            int[] entryIds = {R.id.OneButton, R.id.FiveButton, R.id.TwentyButton, R.id.SixtyButton, R.id.OneHundredButton}; //TODO these shouldn't be hardcoded
-            String[] entryActionIds = {
-                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON0",
-                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON1",
-                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON2",
-                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON3",
-                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON4"};
+            int[] entryIds = {R.id.OneButton, R.id.FiveButton, R.id.TwentyButton, R.id.SixtyButton, R.id.OneHundredButton};
+            String entryActionId = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON";
 
             for (int i=0;i<entryAmounts.length;i++) {
                 intent = new Intent(context, CapacityWidgetProvider.class);
-                intent.setAction(entryActionIds[i]); //TODO handle strings correctly
+                intent.setAction(entryActionId); //TODO handle strings correctly
                 intent.putExtra("amount", entryAmounts[i]);
-                pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT); //You need to specify a proper flag for the intent. Or else the intent will become deleted.
+                //You need to specify a proper flag for the intent. Or else the intent will become deleted.
+                pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
                 newView.setOnClickPendingIntent(entryIds[i], pendingIntent);
             }
-            // update the app widget
+
+            // TODO Settings button onclicklistener
+        //endregion
+            // update the app widget (This triggers OnUpdate)
             appWidgetManager.updateAppWidget(appWidgetId, newView);
         }
     }
 
     // This gets called if the user hasn't granted the app perms to their Google Sheets account
+    // (different from granting perms to the google account itself!)
     @Override
     protected void onCancelled() {
         mProgress.hide();
         if (mLastError != null) {
             if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
+                // TODO: this should've been handled elsewhere so prob doesn't need to be handled here.
 //                showGooglePlayServicesAvailabilityErrorDialog(
 //                        ((GooglePlayServicesAvailabilityIOException) mLastError)
 //                                .getConnectionStatusCode());
@@ -223,11 +238,11 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
                         ((UserRecoverableAuthIOException) mLastError).getIntent(),
                         MainActivity.REQUEST_AUTHORIZATION);
             } else {
-                Log.d(TAG,"The following error occurred:\n"
+                Log.d(TAG,"The following unhandled error occurred:\n"
                         + mLastError.getMessage());
             }
         } else {
-            Log.d(TAG,"Request cancelled.");
+            Log.d(TAG,"Request cancelled. No LastError reported.");
         }
     }
 
@@ -242,7 +257,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
         int weekNumber = (int)(Math.ceil(weekValue));
         int currentWeekIndex = weekNumber + 1;
 
-        Log.d(TAG, "" + currentWeekIndex);
+        Log.d(TAG, "current week index:" + currentWeekIndex);
         return currentWeekIndex;
     }
 
