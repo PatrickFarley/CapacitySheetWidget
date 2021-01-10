@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.EditText;
@@ -18,6 +19,7 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.patrickdfarley.capacitysheetwidget.helpers.SharedPreferenceReader;
+import com.patrickdfarley.capacitysheetwidget.helpers.TimerThreadManager;
 
 import java.util.Arrays;
 
@@ -33,10 +35,18 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS_READONLY, SheetsScopes.SPREADSHEETS};
     private static final String TAG = "CapacityWidgetProvider";
 
-    public static String ENTRY_BUTTON = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON";
+    public static final String ENTRY_BUTTON_0 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_0";
+    public static final String ENTRY_BUTTON_1 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_1";
+    public static final String ENTRY_BUTTON_2 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_2";
+    public static final String ENTRY_BUTTON_3 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3";
+    public static final String ENTRY_BUTTON_4 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_4";
+
+    private static final String ACTION_TIMER_SET = "com.patrickdfarley.capacitysheetwidget.ACTION_TIMER_SET";
 
     //TODO: probably shouldn't have this both here and in MainActivity
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
+
+    private static TimerTask timerTask = new TimerTask();
 
 
     // This should poll the spreadsheet and update the view
@@ -90,17 +100,20 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     }
 
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(final Context context, Intent intent) {
         Log.d(TAG, "onReceive called where intent is " + intent.toString());
         super.onReceive(context, intent);
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // if it was an entry button click:
-        if (ENTRY_BUTTON.equals(intent.getAction()) ){
+        if (ENTRY_BUTTON_0.equals(intent.getAction()) || ENTRY_BUTTON_1.equals(intent.getAction())
+        || ENTRY_BUTTON_2.equals(intent.getAction()) || ENTRY_BUTTON_3.equals(intent.getAction())
+        || ENTRY_BUTTON_4.equals(intent.getAction())){
 
             // record the value entered
             int amount = intent.getIntExtra("amount", 0);
+            Log.d(TAG, "the amount was "+amount);
 
             // update the sharedprefs entry amount, by adding the new button's amount.
             int toReturn = amount + sharedPreferences.getInt("EntryAmount", 0);
@@ -110,11 +123,18 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
             Toast toast = Toast.makeText(context, "current amount is " + toReturn, Toast.LENGTH_SHORT);
             toast.show();
+
+            // Restart the 2s timer:
+            TimerThreadManager.StartTimer();
         }
 
     }
     //region helper methods
 
+    private void TimerUp(Context context){
+        Toast toast = Toast.makeText(context, "Timer up!", Toast.LENGTH_SHORT);
+        toast.show();
+    }
 
     //endregion
 

@@ -31,7 +31,7 @@ import java.util.List;
  * An asynchronous task that handles the initial Google Sheets API read call.
  * Placing the API calls in their own task ensures the UI stays responsive.
  */
-public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
+public class WriteTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
     private com.google.api.services.sheets.v4.Sheets sheetsService;
     private Exception mLastError = null;
@@ -54,7 +54,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
      * @param credential The GoogleAccountCredential, already prepared.
      * @param context The context of the calling class.
      */
-    InitTask(GoogleAccountCredential credential, Context context) {
+    WriteTask(GoogleAccountCredential credential, Context context) {
         Log.d(TAG, "InitTask created with credential" + credential.toString());
 
         HttpTransport transport = AndroidHttp.newCompatibleTransport();
@@ -115,7 +115,6 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
      */
     private List<List<Object>> getSheetData() throws IOException {
 
-        //TODO: don't hardcode these strings.
         // fetch sheet identifier data from the sharedprefs
         String spreadsheetId = sharedPreferences.getString("SpreadsheetId","");
         String sheetName = sharedPreferences.getString("SheetName","");
@@ -191,7 +190,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
             builder.append(responseData.get(OFFSETTOP+categoryCount+OFFSETBOTTOM - 1).get(currentWeekIndex)); // bottom row: success metric
             newView.setTextViewText(R.id.DisplayBar,builder); // add this string to the DisplayBar element of the view.
 
-        //region Assign OnClickListeners
+            //region Assign OnClickListeners
             // assign the DisplayBar's onclicklistener to trigger OnUpdate
             Intent intent;
             PendingIntent pendingIntent;
@@ -226,7 +225,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
             }
 
             // TODO Settings button onclicklistener
-        //endregion
+            //endregion
 
             // update the app widget (This triggers OnUpdate)
             appWidgetManager.updateAppWidget(appWidgetId, newView);

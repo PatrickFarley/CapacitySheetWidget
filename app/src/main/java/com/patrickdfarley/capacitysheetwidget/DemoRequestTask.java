@@ -29,8 +29,9 @@ import static com.patrickdfarley.capacitysheetwidget.MainActivity.REQUEST_AUTHOR
 /**
  * An asynchronous task that handles the Google Sheets API call.
  * Placing the API calls in their own task ensures the UI stays responsive.
+ * THIS IS a test class used on a sample spreadsheet.
  */
-public class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
+public class DemoRequestTask extends AsyncTask<Void, Void, List<String>> {
     private com.google.api.services.sheets.v4.Sheets mService = null;
     private Exception mLastError = null;
     private static final String TAG = "MakeRequestTask";
@@ -39,7 +40,7 @@ public class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
     private Context context;
 
     // class constructor
-    MakeRequestTask(GoogleAccountCredential credential, Context context) {
+    DemoRequestTask(GoogleAccountCredential credential, Context context) {
         HttpTransport transport = AndroidHttp.newCompatibleTransport();
         JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
         this.context = context;
