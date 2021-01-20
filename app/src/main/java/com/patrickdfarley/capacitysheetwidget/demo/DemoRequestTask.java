@@ -1,4 +1,4 @@
-package com.patrickdfarley.capacitysheetwidget;
+package com.patrickdfarley.capacitysheetwidget.demo;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -23,6 +23,7 @@ import com.patrickdfarley.capacitysheetwidget.MainActivity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import com.patrickdfarley.capacitysheetwidget.MainActivity;
 
 import static com.patrickdfarley.capacitysheetwidget.MainActivity.REQUEST_AUTHORIZATION;
 

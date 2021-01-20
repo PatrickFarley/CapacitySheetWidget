@@ -179,7 +179,7 @@ public class WriteTask extends AsyncTask<Void, Void, List<List<Object>>> {
             editor.apply();
 
             // update our RemoteViews category list from the newly updated preferences:
-            newView = new SharedPreferenceReader(context).ReadCategoryData(newView);
+            newView = new SharedPreferenceReader(context).TransferCategoryData(newView);
 
 
             // add week info to DisplayBar:

@@ -29,7 +29,7 @@ public class SharedPreferenceReader {
      * @param original
      * @return
      */
-    public RemoteViews ReadCategoryData(RemoteViews original){
+    public RemoteViews TransferCategoryData(RemoteViews original){
         Log.d(TAG, "reading sharedprefs "+sharedPreferences.toString());
         RemoteViews toReturn = original;
 

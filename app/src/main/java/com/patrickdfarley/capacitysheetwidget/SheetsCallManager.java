@@ -13,6 +13,7 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecovera
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public class SheetsCallManager {
 
     private com.google.api.services.sheets.v4.Sheets sheetsService;
     private Exception mLastError = null;
-    private static final String TAG = "InitTask";
+    private static final String TAG = "SheetsCallManager";
     private static final int OFFSETTOP = 3;
     private static final int OFFSETBOTTOM = 2;
     private Context context;
@@ -32,6 +33,12 @@ public class SheetsCallManager {
         JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
         this.context = context;
 
+        // initialize the Sheets service
+        sheetsService = new Sheets.Builder(
+                transport, jsonFactory, credential)
+                .setApplicationName("@string/app_name")
+                .build();
+
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
     }
 
@@ -41,7 +48,7 @@ public class SheetsCallManager {
      * other methods to use.
      *
      */
-    public void SaveMetaDataToPrefs() {
+    public void saveMetaDataToPrefs() {
 
         // get all sheet data
         List<List<Object>> responseData = GetAllSheetData();
@@ -57,11 +64,20 @@ public class SheetsCallManager {
             SharedPreferences.Editor editor = sharedPreferences.edit();
             editor.putInt("categoryCount", categoryCount);
 
-            // save category data to preferences
-            String catName, catAmount;
+            // save current week index to preferences
             int currentWeekIndex = getCurrentWeekIndex(responseData);
             editor.putInt("CurrentWeekIndex", currentWeekIndex);
 
+            // save current week date to preferences
+            String weekDate = (String)responseData.get(OFFSETTOP-1).get(currentWeekIndex);
+            editor.putString("weekDate",weekDate);
+
+            // save success score to preferences
+            String successScore = (String)responseData.get(OFFSETTOP+categoryCount+OFFSETBOTTOM - 1).get(currentWeekIndex); // bottom row: success metric
+            editor.putString("successScore",successScore);
+
+            // save category data to preferences
+            String catName, catAmount;
             // TODO: get just the cat names here. there's a cleaner way. go back a step and get only the cat cells
             // for each category row:
             for (int i = OFFSETTOP; i < categoryCount + OFFSETTOP; i++) {
@@ -79,6 +95,7 @@ public class SheetsCallManager {
 
     /**
      * This method returns ALL of the relevant sheet data, as simple values (not data).
+     * It is private - the raw data is handled by other methods in this class.
      * @return
      */
     private List<List<Object>> GetAllSheetData() {
@@ -108,9 +125,10 @@ public class SheetsCallManager {
             responseData = response.getValues();
 
             Log.d(TAG, "raw response data (whole range): " + responseData);
+
             return responseData;
         } catch (Exception e) {
-            Log.d(TAG, e.getCause().toString());
+            Log.d(TAG, "error is " + String.valueOf(e.getCause()));
             if (e instanceof UserRecoverableAuthIOException) {
                 // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
 //                Intent authorizationIntent = new Intent(this,
@@ -133,6 +151,7 @@ public class SheetsCallManager {
     /**
      * Using sharedprefs, get the current week's cat scores and success score and return
      * a Result object with these values.
+     * This doesn't seem to be necessary.
      * @return
      */
     private WeekDataResult GetWeekData() {

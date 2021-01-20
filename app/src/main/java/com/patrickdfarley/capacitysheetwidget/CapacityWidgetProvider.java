@@ -76,26 +76,26 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 //            PendingIntent pendingIntent = PendingIntent.getBroadcast(context,0, intent, PendingIntent.FLAG_UPDATE_CURRENT); //You need to specify a proper flag for the intent. Or else the intent will become deleted.
 //            views.setOnClickPendingIntent(R.id.OneButton, pendingIntent);
 
-            appWidgetManager.updateAppWidget(appWidgetId, views);
-
-            // TODO: this credential doesn't have an account selected. How to portably return a credential that's ready?
-            mCredential = GoogleAccountCredential.usingOAuth2(
-                    context, Arrays.asList(SCOPES))
-                    .setBackOff(new ExponentialBackOff());
-
-            //TODO: this is unsafe
-            String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
-            mCredential.setSelectedAccountName(accountName);
-
-            // TODO: test if credential is good (or just handle within the InitTask)
-
-            // TODO: do this work in a service instead? https://developer.android.com/guide/topics/appwidgets/#AppWidgetProvider
-            // do work updating view from spreadsheet
-            InitTask initTask = new InitTask(mCredential, context);
-            initTask.appWidgetManager = appWidgetManager;
-            initTask.appWidgetId = appWidgetId;
-            initTask.remoteViews = views;
-            initTask.execute();
+//            appWidgetManager.updateAppWidget(appWidgetId, views);
+//
+//            // TODO: this credential doesn't have an account selected. How to portably return a credential that's ready?
+//            mCredential = GoogleAccountCredential.usingOAuth2(
+//                    context, Arrays.asList(SCOPES))
+//                    .setBackOff(new ExponentialBackOff());
+//
+//            //TODO: this is unsafe
+//            String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
+//            mCredential.setSelectedAccountName(accountName);
+//
+//            // TODO: test if credential is good (or just handle within the InitTask)
+//
+//            // TODO: do this work in a service instead? https://developer.android.com/guide/topics/appwidgets/#AppWidgetProvider
+//            // do work updating view from spreadsheet
+//            InitTask initTask = new InitTask(mCredential, context);
+//            initTask.appWidgetManager = appWidgetManager;
+//            initTask.appWidgetId = appWidgetId;
+//            initTask.remoteViews = views;
+//            initTask.execute();
         }
     }
 

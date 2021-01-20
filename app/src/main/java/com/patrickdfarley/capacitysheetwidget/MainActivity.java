@@ -21,6 +21,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -31,6 +33,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Arrays;
+import java.util.concurrent.Executors;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -43,7 +46,7 @@ public class MainActivity extends Activity {
     ProgressDialog mProgress;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
-    static final int REQUEST_AUTHORIZATION = 1001;
+    static public final int REQUEST_AUTHORIZATION = 1001;
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
 
@@ -104,18 +107,6 @@ public class MainActivity extends Activity {
         editor.putBoolean("IsInitialized", true);
         editor.apply();
 
-        // get ID info on the widget that launched this activity, so we can return to it.
-        // The ID is contained in the intent that launched this activity.
-        Intent intent = getIntent();
-        int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
-        Bundle extras = intent.getExtras();
-        if (extras != null) {
-            appWidgetId = extras.getInt(
-                    AppWidgetManager.EXTRA_APPWIDGET_ID,
-                    AppWidgetManager.INVALID_APPWIDGET_ID);
-        }
-
-
         // update the appwidget views with default values
         // TODO: Is this line necessary? This is (if successful) done by the following AsyncTask
         // appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -126,13 +117,42 @@ public class MainActivity extends Activity {
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
             RemoteViews views = new RemoteViews(this.getPackageName(),
                     R.layout.capacity_appwidget);
+            // get ID info on the widget that launched this activity, so we can return to it.
+            // The ID is contained in the intent that launched this activity.
+            Intent intent = getIntent();
+            int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
+            Bundle extras = intent.getExtras();
+            if (extras != null) {
+                appWidgetId = extras.getInt(
+                        AppWidgetManager.EXTRA_APPWIDGET_ID,
+                        AppWidgetManager.INVALID_APPWIDGET_ID);
+            }
 
-            // new asynctask, set it up and execute. This will update the widget again when it completes
-            InitTask initTask = new InitTask(mCredential, this);
-            initTask.appWidgetManager = appWidgetManager;
-            initTask.appWidgetId = appWidgetId;
-            initTask.remoteViews = views;
-            initTask.execute();
+//            // new asynctask, set it up and execute. This will update the widget again when it completes
+//            InitTask initTask = new InitTask(mCredential, this);
+//            initTask.appWidgetManager = appWidgetManager;
+//            initTask.appWidgetId = appWidgetId;
+//            initTask.remoteViews = views;
+//            initTask.execute();
+
+            // update UI:
+            final UIManager uIManager = new UIManager(this, appWidgetId, appWidgetManager, views);
+            final Handler mainThreadHandler = new Handler(Looper.getMainLooper()); // TODO: this is a deprecated method; might want to update the Android version
+            final Context contextCopy = this;
+            Executors.newSingleThreadExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    SheetsCallManager sheetsCallManager = new SheetsCallManager(mCredential, contextCopy);
+                    sheetsCallManager.saveMetaDataToPrefs();
+
+                    mainThreadHandler.post(new Runnable(){
+                        @Override
+                        public void run() {
+                            uIManager.updateUI();
+                        }
+                    });
+                }
+            });
 
             // and finish this activity, creating an intent to return.
             Intent resultValue = new Intent();

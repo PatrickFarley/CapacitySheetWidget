@@ -3,12 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <TextView
         android:id="@+id/DisplayBar"
         android:layout_width="match_parent"
         android:layout_height="45dp"
         android:text="#default"
-        android:textSize="20dp"/>
+        android:textColor="#FFFFFF"
+        android:textSize="20dp" />
 
     <LinearLayout
         android:id="@+id/DataField"
