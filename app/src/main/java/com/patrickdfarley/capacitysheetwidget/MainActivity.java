@@ -259,8 +259,8 @@ public class MainActivity extends Activity {
 
     /**
      * Called when an activity launched here (specifically, AccountPicker
-     * and authorization) exits, giving you the requestCode you started it with,
-     * the resultCode it returned, and any additional data from it.
+     * and authorization) exits, giving you the requestCode you started it with.
+     * The resultCode it returned, and any additional data from it.
      * @param requestCode code indicating which activity result is incoming.
      * @param resultCode code indicating the result of the incoming
      *     activity result.

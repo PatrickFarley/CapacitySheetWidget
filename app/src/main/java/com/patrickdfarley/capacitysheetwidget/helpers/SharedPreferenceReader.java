@@ -1,11 +1,13 @@
 package com.patrickdfarley.capacitysheetwidget.helpers;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 
+import com.patrickdfarley.capacitysheetwidget.CapacityWidgetProvider;
 import com.patrickdfarley.capacitysheetwidget.R;
 
 /**
@@ -37,13 +39,22 @@ public class SharedPreferenceReader {
         // clear cat views out of parent view
         toReturn.removeAllViews(R.id.CatsList);
 
+        Intent intent;
+        String catName, catAmount;
         int categoryCount = sharedPreferences.getInt("CatCount", 0);
         for (int i=0; i<categoryCount; i++){
             // create a category_item childview
             RemoteViews childView = new RemoteViews(context.getPackageName(),R.layout.category_item);
             // TODO: the key strings being looked up here: should use a common helper method to construct these strings.
-            childView.setTextViewText(R.id.CatAmount, sharedPreferences.getString("Cat"+i,null));
-            childView.setTextViewText(R.id.CatName,sharedPreferences.getString("Cat"+i+"Name",null));
+
+            catName = sharedPreferences.getString("Cat"+i+"Name",null);
+            catAmount = sharedPreferences.getString("Cat"+i,null);
+
+            childView.setTextViewText(R.id.CatAmount, catAmount );
+            childView.setTextViewText(R.id.CatName, catName);
+
+
+
             toReturn.addView(R.id.CatsList, childView); // add childview to the CatsList element of the main view.
         }
         return toReturn;

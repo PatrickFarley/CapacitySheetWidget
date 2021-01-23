@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.EditText;
@@ -22,6 +23,7 @@ import com.patrickdfarley.capacitysheetwidget.helpers.SharedPreferenceReader;
 import com.patrickdfarley.capacitysheetwidget.helpers.TimerThreadManager;
 
 import java.util.Arrays;
+import java.util.concurrent.Executors;
 
 import pub.devrel.easypermissions.EasyPermissions;
 
@@ -46,11 +48,15 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     //TODO: probably shouldn't have this both here and in MainActivity
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
 
-    private static TimerTask timerTask = new TimerTask();
 
-
-    // This should poll the spreadsheet and update the view
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+    /**
+     * this is trigger on a timetable, OR can be triggered manually by an intent. it's triggered
+     * for some set of app widget IDs
+     * @param context
+     * @param appWidgetManager
+     * @param appWidgetIds
+     */
+    public void onUpdate(final Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         Log.d(TAG, "onUpdate called");
 
         if (!PreferenceManager.getDefaultSharedPreferences(context).getBoolean("IsInitialized",false)){
@@ -78,27 +84,39 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
 //            appWidgetManager.updateAppWidget(appWidgetId, views);
 //
-//            // TODO: this credential doesn't have an account selected. How to portably return a credential that's ready?
-//            mCredential = GoogleAccountCredential.usingOAuth2(
-//                    context, Arrays.asList(SCOPES))
-//                    .setBackOff(new ExponentialBackOff());
-//
-//            //TODO: this is unsafe
-//            String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
-//            mCredential.setSelectedAccountName(accountName);
-//
-//            // TODO: test if credential is good (or just handle within the InitTask)
-//
-//            // TODO: do this work in a service instead? https://developer.android.com/guide/topics/appwidgets/#AppWidgetProvider
-//            // do work updating view from spreadsheet
-//            InitTask initTask = new InitTask(mCredential, context);
-//            initTask.appWidgetManager = appWidgetManager;
-//            initTask.appWidgetId = appWidgetId;
-//            initTask.remoteViews = views;
-//            initTask.execute();
+            // TODO: This is unsafe; this class doesn't have access to all the credential checks that MainActivity has.
+            mCredential = GoogleAccountCredential.usingOAuth2(
+                    context, Arrays.asList(SCOPES))
+                    .setBackOff(new ExponentialBackOff());
+            String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
+            mCredential.setSelectedAccountName(accountName);
+
+            // get sheet data and update UI:
+            // !!! this code hasn't been run yet.
+            final UIManager uIManager = new UIManager(context, appWidgetId, appWidgetManager, views);
+            final Handler mainThreadHandler = new Handler(Looper.getMainLooper()); // TODO: this is a deprecated method; might want to update the Android version
+            Executors.newSingleThreadExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    SheetsCallManager sheetsCallManager = new SheetsCallManager(mCredential, context);
+                    sheetsCallManager.saveMetaDataToPrefs();
+
+                    mainThreadHandler.post(new Runnable(){
+                        @Override
+                        public void run() {
+                            uIManager.updateUI();
+                        }
+                    });
+                }
+            });
         }
     }
 
+    /**
+     * receives many kinds of inputs.
+     * @param context
+     * @param intent
+     */
     @Override
     public void onReceive(final Context context, Intent intent) {
         Log.d(TAG, "onReceive called where intent is " + intent.toString());

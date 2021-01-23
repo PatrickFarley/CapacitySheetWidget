@@ -49,8 +49,10 @@ public class UIManager {
             // create an updated RemoteViews:
             RemoteViews newView = remoteViews;
 
-            // update our RemoteViews category list from the newly updated preferences:
+            // update our RemoteViews category list from the newly updated preferences
+            // Also adds onclick listeners
             newView = new SharedPreferenceReader(context).TransferCategoryData(newView);
+
 
             // add week info to DisplayBar:
             StringBuilder builder = new StringBuilder();
@@ -75,7 +77,7 @@ public class UIManager {
 
             // minute entry buttons:
             // Each button sends an intent (carrying an integer amount) to trigger a response from the widgetprovider
-            //TODO these shouldn't be hardcoded
+            //TODO these shouldn't be hardcoded; and this should apparently use a Fill-in intent instead.
             int[] entryAmounts = {1,5,20,60,100};
             int[] entryIds = {R.id.OneButton, R.id.FiveButton, R.id.TwentyButton, R.id.SixtyButton, R.id.OneHundredButton};
             String[] entryActionIds = {"com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_0",
@@ -83,7 +85,6 @@ public class UIManager {
                     "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_2",
                     "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3",
                     "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_4"};
-
             for (int i=0;i<entryAmounts.length;i++) {
                 intent = new Intent(context, CapacityWidgetProvider.class);
                 intent.setAction(entryActionIds[i]); //TODO handle strings correctly
@@ -95,10 +96,20 @@ public class UIManager {
             }
 
             // TODO Settings button onclicklistener
+
+            //
             //endregion
 
             // update the app widget
             appWidgetManager.updateAppWidget(appWidgetId, newView);
 //        }
     }
+
+    private void populateCatsList(RemoteViews views){
+
+
+
+    }
+    
 }
+

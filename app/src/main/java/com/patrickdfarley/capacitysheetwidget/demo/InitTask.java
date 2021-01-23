@@ -1,4 +1,4 @@
-package com.patrickdfarley.capacitysheetwidget;
+package com.patrickdfarley.capacitysheetwidget.demo;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
@@ -22,6 +22,9 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
+import com.patrickdfarley.capacitysheetwidget.CapacityWidgetProvider;
+import com.patrickdfarley.capacitysheetwidget.MainActivity;
+import com.patrickdfarley.capacitysheetwidget.R;
 import com.patrickdfarley.capacitysheetwidget.helpers.SharedPreferenceReader;
 
 import java.io.IOException;

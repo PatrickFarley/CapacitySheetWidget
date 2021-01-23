@@ -18,7 +18,7 @@
         android:layout_height="match_parent"
         android:orientation="horizontal">
 
-        <LinearLayout
+        <ListView
             android:id="@+id/CatsList"
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -26,8 +26,7 @@
             android:orientation="vertical">
 
             <!-- This is to be populated by category_item elements programmatically -->
-
-        </LinearLayout>
+        </ListView>
 
         <LinearLayout
             android:id="@+id/ButtonsList"
