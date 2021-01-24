@@ -1,6 +1,7 @@
 package com.patrickdfarley.capacitysheetwidget;
 
 import android.appwidget.AppWidgetManager;
+import android.net.Uri;
 import android.os.Bundle;
 
 import com.google.api.services.sheets.v4.SheetsScopes;
@@ -115,7 +116,7 @@ public class MainActivity extends Activity {
             // get info needed to interact with the widget, including a default RemoteViews of the
             // widget's layout
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
-            RemoteViews views = new RemoteViews(this.getPackageName(),
+            RemoteViews newView = new RemoteViews(this.getPackageName(),
                     R.layout.capacity_appwidget);
             // get ID info on the widget that launched this activity, so we can return to it.
             // The ID is contained in the intent that launched this activity.
@@ -128,15 +129,8 @@ public class MainActivity extends Activity {
                         AppWidgetManager.INVALID_APPWIDGET_ID);
             }
 
-//            // new asynctask, set it up and execute. This will update the widget again when it completes
-//            InitTask initTask = new InitTask(mCredential, this);
-//            initTask.appWidgetManager = appWidgetManager;
-//            initTask.appWidgetId = appWidgetId;
-//            initTask.remoteViews = views;
-//            initTask.execute();
-
             // update UI:
-            final UIManager uIManager = new UIManager(this, appWidgetId, appWidgetManager, views);
+            final UIManager uIManager = new UIManager(this, appWidgetId, appWidgetManager, newView);
             final Handler mainThreadHandler = new Handler(Looper.getMainLooper()); // TODO: this is a deprecated method; might want to update the Android version
             final Context contextCopy = this;
             Executors.newSingleThreadExecutor().execute(new Runnable() {
@@ -153,6 +147,7 @@ public class MainActivity extends Activity {
                     });
                 }
             });
+
 
             // and finish this activity, creating an intent to return.
             Intent resultValue = new Intent();

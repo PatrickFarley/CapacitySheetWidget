@@ -1,13 +1,18 @@
 package com.patrickdfarley.capacitysheetwidget.helpers;
 
+import android.app.PendingIntent;
+import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 
 import com.patrickdfarley.capacitysheetwidget.CapacityWidgetProvider;
+import com.patrickdfarley.capacitysheetwidget.CatsRemoteViewsService;
 import com.patrickdfarley.capacitysheetwidget.R;
 
 /**
@@ -28,16 +33,14 @@ public class SharedPreferenceReader {
     /**
      * Takes a RemoteViews of the capacity_appwidget layout and updates its category data from the
      * shared preferences. leaves other data untouched.
-     * @param original
+     * @param remoteViews
      * @return
      */
-    public RemoteViews TransferCategoryData(RemoteViews original){
-        Log.d(TAG, "reading sharedprefs "+sharedPreferences.toString());
-        RemoteViews toReturn = original;
+    public RemoteViews TransferCategoryData(RemoteViews remoteViews, int appWidgetId){
 
-        toReturn.getLayoutId();
-        // clear cat views out of parent view
-        toReturn.removeAllViews(R.id.CatsList);
+
+
+        Log.d(TAG, "reading from sharedprefs "+sharedPreferences.toString());
 
         Intent intent;
         String catName, catAmount;
@@ -53,11 +56,9 @@ public class SharedPreferenceReader {
             childView.setTextViewText(R.id.CatAmount, catAmount );
             childView.setTextViewText(R.id.CatName, catName);
 
-
-
-            toReturn.addView(R.id.CatsList, childView); // add childview to the CatsList element of the main view.
+            remoteViews.addView(R.id.CatsList, childView); // add childview to the CatsList element of the main view.
         }
-        return toReturn;
+        return remoteViews;
     }
 }
 

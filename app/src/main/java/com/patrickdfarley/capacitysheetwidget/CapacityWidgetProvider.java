@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
@@ -42,7 +43,9 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     public static final String ENTRY_BUTTON_2 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_2";
     public static final String ENTRY_BUTTON_3 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3";
     public static final String ENTRY_BUTTON_4 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_4";
+    public static final String CAT_ENTRY_ACTION =  "com.patrickdfarley.capacitysheetwidget.CAT_ENTRY_ACTION";
 
+    public static final String CAT_ID = "com.patrickdfarley.capacitysheetwidget.CAT_ID";
     private static final String ACTION_TIMER_SET = "com.patrickdfarley.capacitysheetwidget.ACTION_TIMER_SET";
 
     //TODO: probably shouldn't have this both here and in MainActivity
@@ -64,7 +67,6 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             return;
         }
 
-
         final int N = appWidgetIds.length;
 
         // Perform this loop procedure for each App Widget that belongs to this provider
@@ -74,16 +76,6 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             // Get the default view for the App Widget layout
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.capacity_appwidget);
 
-            // create an intent with the action id ENTRY_BUTTON and set it to the onClick of a button
-//            Intent intent = new Intent(ENTRY_BUTTON);
-//            Intent intent = new Intent(context, CapacityWidgetProvider.class);
-//            intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-//
-//            PendingIntent pendingIntent = PendingIntent.getBroadcast(context,0, intent, PendingIntent.FLAG_UPDATE_CURRENT); //You need to specify a proper flag for the intent. Or else the intent will become deleted.
-//            views.setOnClickPendingIntent(R.id.OneButton, pendingIntent);
-
-//            appWidgetManager.updateAppWidget(appWidgetId, views);
-//
             // TODO: This is unsafe; this class doesn't have access to all the credential checks that MainActivity has.
             mCredential = GoogleAccountCredential.usingOAuth2(
                     context, Arrays.asList(SCOPES))
@@ -92,7 +84,6 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             mCredential.setSelectedAccountName(accountName);
 
             // get sheet data and update UI:
-            // !!! this code hasn't been run yet.
             final UIManager uIManager = new UIManager(context, appWidgetId, appWidgetManager, views);
             final Handler mainThreadHandler = new Handler(Looper.getMainLooper()); // TODO: this is a deprecated method; might want to update the Android version
             Executors.newSingleThreadExecutor().execute(new Runnable() {
@@ -120,7 +111,6 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     @Override
     public void onReceive(final Context context, Intent intent) {
         Log.d(TAG, "onReceive called where intent is " + intent.toString());
-        super.onReceive(context, intent);
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
@@ -145,6 +135,17 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             // Restart the 2s timer:
             TimerThreadManager.StartTimer();
         }
+
+
+        // if it was a CategoryName click:
+        if (CAT_ENTRY_ACTION.equals(intent.getAction())){
+            int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
+                    AppWidgetManager.INVALID_APPWIDGET_ID);
+            int catId = intent.getIntExtra(CAT_ID, 0);
+            Toast.makeText(context,"Item" + ++catId + " selected", Toast.LENGTH_SHORT).show();
+        }
+
+        super.onReceive(context, intent);
 
     }
     //region helper methods

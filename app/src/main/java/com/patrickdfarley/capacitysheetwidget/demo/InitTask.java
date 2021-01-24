@@ -183,7 +183,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
             editor.apply();
 
             // update our RemoteViews category list from the newly updated preferences:
-            newView = new SharedPreferenceReader(context).TransferCategoryData(newView);
+            newView = new SharedPreferenceReader(context).TransferCategoryData(newView, appWidgetId);
 
 
             // add week info to DisplayBar:
