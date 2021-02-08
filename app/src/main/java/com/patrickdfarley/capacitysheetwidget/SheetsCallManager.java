@@ -14,8 +14,10 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class SheetsCallManager {
@@ -51,7 +53,7 @@ public class SheetsCallManager {
     public void saveMetaDataToPrefs() {
 
         // get all sheet data
-        List<List<Object>> responseData = GetAllSheetData();
+        List<List<Object>> responseData = GetAllSheetData(false);
 
         if (responseData == null || responseData.size() == 0) {
             Log.d(TAG, "No results returned!");
@@ -69,11 +71,11 @@ public class SheetsCallManager {
             editor.putInt("CurrentWeekIndex", currentWeekIndex);
 
             // save current week date to preferences
-            String weekDate = (String)responseData.get(OFFSETTOP-1).get(currentWeekIndex);
+            String weekDate = String.valueOf(responseData.get(OFFSETTOP-1).get(currentWeekIndex));
             editor.putString("weekDate",weekDate);
 
             // save success score to preferences
-            String successScore = (String)responseData.get(OFFSETTOP+categoryCount+OFFSETBOTTOM - 1).get(currentWeekIndex); // bottom row: success metric
+            String successScore = String.valueOf(responseData.get(OFFSETTOP+categoryCount+OFFSETBOTTOM - 1).get(currentWeekIndex)); // bottom row: success metric
             editor.putString("successScore",successScore);
 
             // save category data to preferences
@@ -82,9 +84,9 @@ public class SheetsCallManager {
             // for each category row:
             for (int i = OFFSETTOP; i < categoryCount + OFFSETTOP; i++) {
                 // get the category name for that row
-                catName = (String) responseData.get(i).get(0);
+                catName = String.valueOf(responseData.get(i).get(0));
                 // get the current week's entered value, assuming it's withing the responseData's range:
-                catAmount = responseData.get(i).size() > currentWeekIndex ? (String) (responseData.get(i).get(currentWeekIndex)) : "";
+                catAmount = responseData.get(i).size() > currentWeekIndex ? String.valueOf((responseData.get(i).get(currentWeekIndex))) : "";
                 editor.putString("Cat" + (i - OFFSETTOP), catAmount);
                 editor.putString("Cat" + (i - OFFSETTOP) + "Name", catName);
                 Log.d(TAG, "Category" + catName + " and value " + catAmount + " added to shared prefs.");
@@ -93,13 +95,75 @@ public class SheetsCallManager {
         }
     }
 
+
+    public void addMinuteData(int catID, int entryAmount){
+        // get all sheet data
+        List<List<Object>> rawResponseData = GetAllSheetData(true);
+
+        String spreadsheetId = sharedPreferences.getString("SpreadsheetId", "");
+        String sheetName = sharedPreferences.getString("SheetName", "");
+        String dataRange = sharedPreferences.getString("DataRange", "");
+
+
+        // pinpoint the particular category data we want
+        int catRow = catID + OFFSETTOP;
+        int currentWeekIndex = sharedPreferences.getInt("CurrentWeekIndex", 0);
+        Point cellPoint = new Point(catRow,currentWeekIndex);
+        Log.d(TAG,"point is "+ cellPoint.toString());
+        Log.d(TAG, "going to get point "+ cellPoint.x + cellPoint.y + " for responseData " + rawResponseData.toString());
+        String catData = String.valueOf(rawResponseData.get(cellPoint.x).get(cellPoint.y));
+
+
+        String newCatData = catData + "+" + entryAmount;
+        // convert catData to a formula if it isn't already:
+        char firstChar = newCatData.charAt(0);
+        if (firstChar != '+' && firstChar != '='){
+            newCatData = "=" + newCatData;
+        }
+
+        // modify the category data
+        List<List<Object>> values = Arrays.asList(
+                Arrays.asList(
+                        (Object)newCatData
+                )
+        );
+        ValueRange newValueRange = new ValueRange().setValues(values);
+
+        // convert cell point to use the 1-beginning index format of Sheets:
+        cellPoint.x += 1;
+        cellPoint.y += 1;
+        final String finalRange = "'" + sheetName + "'!" + Point2A1(cellPoint);
+        Log.d(TAG,"final range is "+finalRange);
+
+        // write the category data
+        try {
+            // sheets API call:
+            UpdateValuesResponse response = sheetsService.spreadsheets().values()
+                    .update(spreadsheetId, finalRange, newValueRange).setValueInputOption("USER_ENTERED")
+                    .execute();
+            Log.d(TAG, "New cat data "+ newCatData + " written successfully!");
+            // TODO: log the operation in the undo stack here.
+            // TODO: update the UI here.
+            return;
+        } catch (Exception e) {
+            Log.d(TAG, "data write error is: " + String.valueOf(e.getCause()));
+            if (e instanceof UserRecoverableAuthIOException) {
+                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
+            }
+            mLastError = e;
+            return;
+        }
+
+    }
+
+
     /**
      * This method returns ALL of the relevant sheet data, as simple values (not data).
      * It is private - the raw data is handled by other methods in this class.
      * @return
      */
-    private List<List<Object>> GetAllSheetData() {
-        //TODO: don't hardcode these strings.
+    private List<List<Object>> GetAllSheetData(boolean raw) {
+        //TODO: don't hardcode these strings. or at least put them in constructor
         // fetch sheet identifier data from the sharedprefs
         String spreadsheetId = sharedPreferences.getString("SpreadsheetId", "");
         String sheetName = sharedPreferences.getString("SheetName", "");
@@ -108,7 +172,7 @@ public class SheetsCallManager {
         // convert to two points (row,col)
         Point[] dataRangePoints = A12Coords(dataRange);
 
-        // Manually expand the range here: we want the very first row down to the succes row.
+        // Manually expand the range here: we want the very first row down to the success row.
         dataRangePoints[0].x -= OFFSETTOP; // top-range row coordinate
         dataRangePoints[1].x += OFFSETBOTTOM; // bottom-range row coordinate
 
@@ -117,20 +181,21 @@ public class SheetsCallManager {
         Log.d(TAG, "finalRange: " + finalRange);
 
         try {
+            String valueRenderOption = raw ? "FORMULA" : "FORMATTED_VALUE";
             // sheets API call: get all data within finalRange
             List<List<Object>> responseData = null;
             ValueRange response = this.sheetsService.spreadsheets().values()
-                    .get(spreadsheetId, finalRange)
+                    .get(spreadsheetId, finalRange).setValueRenderOption(valueRenderOption)
                     .execute();
             responseData = response.getValues();
 
-            Log.d(TAG, "raw response data (whole range): " + responseData);
+            Log.d(TAG, "response data (whole range): " + responseData);
 
             return responseData;
         } catch (Exception e) {
-            Log.d(TAG, "error is " + String.valueOf(e.getCause()));
+            Log.d(TAG, "data get error is " + (e.getCause()));
             if (e instanceof UserRecoverableAuthIOException) {
-                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
+//                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
 //                Intent authorizationIntent = new Intent(this,
 //                        GmailAuthorizationActivity.class)
 //                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -151,7 +216,7 @@ public class SheetsCallManager {
     /**
      * Using sharedprefs, get the current week's cat scores and success score and return
      * a Result object with these values.
-     * This doesn't seem to be necessary.
+     * TODO: This doesn't seem to be necessary.
      * @return
      */
     private WeekDataResult GetWeekData() {
@@ -191,13 +256,13 @@ public class SheetsCallManager {
         String catName, catScore;
         for (int i = 0; i < categoryCount; i++) {
             // get the current week's entered value, assuming it's withing the responseData's range:
-            catScore = (String) weekData.get(i).get(0);
+            catScore = String.valueOf(weekData.get(i).get(0));
             catName = sharedPreferences.getString("Cat" + i, "");
             toReturn.addCategory(catName, catScore);
         }
 
         // get the current week's success score
-        toReturn.SuccessScore = (String) weekData.get(categoryCount + OFFSETBOTTOM-1).get(0);
+        toReturn.SuccessScore = String.valueOf(weekData.get(categoryCount + OFFSETBOTTOM-1).get(0));
 
         return toReturn;
     }
@@ -208,7 +273,7 @@ public class SheetsCallManager {
 //        Scanner sc = new Scanner((String) output.get(0).get(0));
 //        double weekValue = sc.nextDouble();
 
-        double weekValue = Double.parseDouble((String) output.get(0).get(0));
+        double weekValue = Double.parseDouble(String.valueOf(output.get(0).get(0)));
         int weekNumber = (int) (Math.ceil(weekValue));
         int currentWeekIndex = weekNumber + 1;
 
@@ -243,11 +308,17 @@ public class SheetsCallManager {
             throw new IllegalArgumentException("Need an array of at least 2 points!");
         }
         StringBuilder builder = new StringBuilder();
-        builder.append(number2ColumnLetter(points[0].y));   // column
-        builder.append(points[0].x);    // row
+        builder.append(Point2A1(points[0]));
         builder.append(":");
-        builder.append(number2ColumnLetter(points[1].y));   // column
-        builder.append(points[1].x);    // row
+        builder.append(Point2A1(points[1]));
+
+        return builder.toString();
+    }
+
+    private String Point2A1(Point point) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(number2ColumnLetter(point.y));   // column
+        builder.append(point.x);    // row
 
         return builder.toString();
     }
@@ -275,7 +346,7 @@ public class SheetsCallManager {
         return sb.toString();
     }
 
-    public int columnLetter2Number(String inputColumnName) {
+    private int columnLetter2Number(String inputColumnName) {
         int outputColumnNumber = 0;
 
         if (inputColumnName == null || inputColumnName.length() == 0) {
@@ -293,7 +364,7 @@ public class SheetsCallManager {
         return outputColumnNumber;
     }
 
-    public String number2ColumnLetter(int inputColumnNumber) {
+    private String number2ColumnLetter(int inputColumnNumber) {
         String outputColumnName = "";
         int Base = 26;
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

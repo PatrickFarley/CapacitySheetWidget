@@ -1,27 +1,39 @@
 package com.patrickdfarley.capacitysheetwidget.helpers;
 
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+
+import java.util.Timer;
 
 public class TimerThreadManager {
 
-    private static final String TAG = "TimerThreadManager";
-    private static final int DELAY_TIME_MILLIS = 2000;
+    private final String TAG = "TimerThreadManager";
+    private final int DELAY_TIME_MILLIS = 2000;
+    private Handler timerHandler;
 
-    private static Handler timerHandler = new Handler();
-    private static Runnable timerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            Log.d(TAG, "Executing Write operation!");
+    private static TimerThreadManager instance = null;
+
+    private TimerThreadManager(){
+        timerHandler = new Handler();
+    }
+
+    public static TimerThreadManager getInstance(){
+        if (instance ==null){
+            instance = new TimerThreadManager();
         }
-    };
+        return instance;
+    }
 
-    public static void StartTimer(){
+
+    public void RestartTimer(Runnable timerRunnable){
+        Log.d(TAG, "RestartTimer called");
         ClearTimer();
+        //timerHandler.post(timerRunnable);
         timerHandler.postDelayed(timerRunnable, DELAY_TIME_MILLIS);
     }
 
-    private static void ClearTimer(){
-        timerHandler.removeCallbacks(timerRunnable);
+    private void ClearTimer(){
+        timerHandler.removeCallbacksAndMessages(null);
     }
 }

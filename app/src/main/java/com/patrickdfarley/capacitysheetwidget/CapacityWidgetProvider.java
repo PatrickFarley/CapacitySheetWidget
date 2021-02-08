@@ -1,32 +1,24 @@
 package com.patrickdfarley.capacitysheetwidget;
 
-import android.Manifest;
-import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.widget.EditText;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
-import com.patrickdfarley.capacitysheetwidget.helpers.SharedPreferenceReader;
 import com.patrickdfarley.capacitysheetwidget.helpers.TimerThreadManager;
 
 import java.util.Arrays;
 import java.util.concurrent.Executors;
-
-import pub.devrel.easypermissions.EasyPermissions;
 
 /**
  * Created by pdfarley on 3/5/2019.
@@ -43,7 +35,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     public static final String ENTRY_BUTTON_2 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_2";
     public static final String ENTRY_BUTTON_3 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3";
     public static final String ENTRY_BUTTON_4 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_4";
-    public static final String CAT_ENTRY_ACTION =  "com.patrickdfarley.capacitysheetwidget.CAT_ENTRY_ACTION";
+    public static final String CAT_ENTRY_ACTION = "com.patrickdfarley.capacitysheetwidget.CAT_ENTRY_ACTION";
 
     public static final String CAT_ID = "com.patrickdfarley.capacitysheetwidget.CAT_ID";
     private static final String ACTION_TIMER_SET = "com.patrickdfarley.capacitysheetwidget.ACTION_TIMER_SET";
@@ -55,6 +47,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     /**
      * this is trigger on a timetable, OR can be triggered manually by an intent. it's triggered
      * for some set of app widget IDs
+     *
      * @param context
      * @param appWidgetManager
      * @param appWidgetIds
@@ -62,7 +55,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     public void onUpdate(final Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         Log.d(TAG, "onUpdate called");
 
-        if (!PreferenceManager.getDefaultSharedPreferences(context).getBoolean("IsInitialized",false)){
+        if (!PreferenceManager.getDefaultSharedPreferences(context).getBoolean("IsInitialized", false)) {
             Log.d(TAG, "OnUpdate: widget was not initialized. returning...");
             return;
         }
@@ -92,7 +85,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
                     SheetsCallManager sheetsCallManager = new SheetsCallManager(mCredential, context);
                     sheetsCallManager.saveMetaDataToPrefs();
 
-                    mainThreadHandler.post(new Runnable(){
+                    mainThreadHandler.post(new Runnable() {
                         @Override
                         public void run() {
                             uIManager.updateUI();
@@ -105,6 +98,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
     /**
      * receives many kinds of inputs.
+     *
      * @param context
      * @param intent
      */
@@ -112,16 +106,16 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     public void onReceive(final Context context, Intent intent) {
         Log.d(TAG, "onReceive called where intent is " + intent.toString());
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // if it was an entry button click:
         if (ENTRY_BUTTON_0.equals(intent.getAction()) || ENTRY_BUTTON_1.equals(intent.getAction())
-        || ENTRY_BUTTON_2.equals(intent.getAction()) || ENTRY_BUTTON_3.equals(intent.getAction())
-        || ENTRY_BUTTON_4.equals(intent.getAction())){
+                || ENTRY_BUTTON_2.equals(intent.getAction()) || ENTRY_BUTTON_3.equals(intent.getAction())
+                || ENTRY_BUTTON_4.equals(intent.getAction())) {
 
             // record the value entered
             int amount = intent.getIntExtra("amount", 0);
-            Log.d(TAG, "the amount was "+amount);
+            Log.d(TAG, "the amount was " + amount);
 
             // update the sharedprefs entry amount, by adding the new button's amount.
             int toReturn = amount + sharedPreferences.getInt("EntryAmount", 0);
@@ -132,17 +126,32 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             Toast toast = Toast.makeText(context, "current amount is " + toReturn, Toast.LENGTH_SHORT);
             toast.show();
 
-            // Restart the 2s timer:
-            TimerThreadManager.StartTimer();
+
+            // TODO: This is unsafe!; this class doesn't have access to all the credential checks that MainActivity has.
+            mCredential = GoogleAccountCredential.usingOAuth2(
+                    context, Arrays.asList(SCOPES))
+                    .setBackOff(new ExponentialBackOff());
+            String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
+            mCredential.setSelectedAccountName(accountName);
+            Log.d(TAG, "outer thread credential is "+mCredential);
+            final SheetsCallManager sheetsCallManager = new SheetsCallManager(mCredential, context);
+
+            Runnable timerRunnable = constructTimerRunnable(sharedPreferences, context, sheetsCallManager);
+            TimerThreadManager.getInstance().RestartTimer(timerRunnable);
+
         }
 
 
         // if it was a CategoryName click:
-        if (CAT_ENTRY_ACTION.equals(intent.getAction())){
+        if (CAT_ENTRY_ACTION.equals(intent.getAction())) {
             int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                     AppWidgetManager.INVALID_APPWIDGET_ID);
             int catId = intent.getIntExtra(CAT_ID, 0);
-            Toast.makeText(context,"Item" + ++catId + " selected", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Item" + catId + " selected", Toast.LENGTH_SHORT).show();
+
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putInt("CatId", catId);
+            editor.apply();
         }
 
         super.onReceive(context, intent);
@@ -150,10 +159,31 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     }
     //region helper methods
 
-    private void TimerUp(Context context){
+    private void TimerUp(Context context) {
         Toast toast = Toast.makeText(context, "Timer up!", Toast.LENGTH_SHORT);
         toast.show();
     }
+
+    private Runnable constructTimerRunnable(SharedPreferences sharedPrefs, final Context context, final SheetsCallManager sheetsCallManager) {
+
+        final int catId = sharedPrefs.getInt("CatId", -1);
+        final int entryAmount = sharedPrefs.getInt("EntryAmount", -1);
+
+        return new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "Executing Write operation!");
+
+                Executors.newSingleThreadExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        sheetsCallManager.addMinuteData(catId,entryAmount);
+                    }
+                });
+            }
+        };
+    }
+
 
     //endregion
 

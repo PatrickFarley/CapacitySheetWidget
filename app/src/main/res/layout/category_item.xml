@@ -4,9 +4,10 @@
     android:id="@+id/CatItem"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_weight="1"
     android:background="#FFFFFF"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:layout_margin="2dp"
+    >
 
 
     <TextView
@@ -18,16 +19,16 @@
         android:text="#defaultVal"
 
         android:textColor="#000000"
-        android:textSize="14dp" />
+        android:textSize="22dp" />
 
     <TextView
         android:id="@+id/CatAmount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="3"
+        android:layout_weight="4"
         android:text="00"
 
         android:textColor="#000000"
-        android:textSize="14dp" />
+        android:textSize="22dp" />
 
 </LinearLayout>
