@@ -27,5 +27,5 @@ a global, trans-widget-ID switch for the different modes. When a data button is 
 1. for publish, I will have to use a different SHA1 fingerprint? I forget.
 
 # work context
-first, get the onUpdate task working. for regular updates
-Then you can start handling entry button clicks
+nothing happens when the timer runs out.
+selected-category is saved as a state, but highlighting needs to be implemented.

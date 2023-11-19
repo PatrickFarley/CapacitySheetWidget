@@ -36,6 +36,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     public static final String ENTRY_BUTTON_3 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3";
     public static final String ENTRY_BUTTON_4 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_4";
     public static final String CAT_ENTRY_ACTION = "com.patrickdfarley.capacitysheetwidget.CAT_ENTRY_ACTION";
+    public static final String SETTINGS_BUTTON_ACTION = "com.patrickdfarley.capacitysheetwidget.SETTINGS_BUTTON_ACTION";
 
     public static final String CAT_ID = "com.patrickdfarley.capacitysheetwidget.CAT_ID";
     private static final String ACTION_TIMER_SET = "com.patrickdfarley.capacitysheetwidget.ACTION_TIMER_SET";
@@ -46,7 +47,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
     /**
      * this is trigger on a timetable, OR can be triggered manually by an intent. it's triggered
-     * for some set of app widget IDs
+     * for some set of app widget IDs. It should update the UI
      *
      * @param context
      * @param appWidgetManager
@@ -127,6 +128,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             toast.show();
 
 
+            // Restart the timer; only when timer finishes does the value get sent to the sheet.
             // TODO: This is unsafe!; this class doesn't have access to all the credential checks that MainActivity has.
             mCredential = GoogleAccountCredential.usingOAuth2(
                     context, Arrays.asList(SCOPES))
@@ -153,6 +155,18 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             editor.putInt("CatId", catId);
             editor.apply();
         }
+
+        /*// if it was a SettingsButton click:
+        if (SETTINGS_BUTTON_ACTION.equals(intent.getAction())) {
+            int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
+                    AppWidgetManager.INVALID_APPWIDGET_ID);
+            int catId = intent.getIntExtra(CAT_ID, 0);
+            Toast.makeText(context, "Item" + catId + " selected", Toast.LENGTH_SHORT).show();
+
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putInt("CatId", catId);
+            editor.apply();
+        }*/
 
         super.onReceive(context, intent);
 

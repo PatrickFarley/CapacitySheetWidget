@@ -38,8 +38,6 @@ public class SharedPreferenceReader {
      */
     public RemoteViews TransferCategoryData(RemoteViews remoteViews, int appWidgetId){
 
-
-
         Log.d(TAG, "reading from sharedprefs "+sharedPreferences.toString());
 
         Intent intent;
