@@ -12,6 +12,9 @@ import android.widget.RemoteViews;
 
 import java.util.Random;
 
+/*
+Sets up UI
+ */
 public class UIManager {
 
     private static final String TAG = "UIManager";
@@ -50,7 +53,7 @@ public class UIManager {
 
         //region set CatsList remote adapter
 
-        // Here we setup the intent which points to the CatsRemoteViewsService which will
+        // Here we set up the intent which points to the CatsRemoteViewsService which will
         // provide the views for this collection.
         Intent rvIntent = new Intent(context, CatsRemoteViewsService.class);
         rvIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
@@ -127,9 +130,15 @@ public class UIManager {
             //Log.d(TAG, "Entry id " + entryIds[i] + " has pending intent " + pendingIntent.toString());
         }
 
-        // TODO Settings button onclicklistener
+        // assign the SettingsButton's onclicklistener to launch MainActivity
+        intent = new Intent(context, MainActivity.class);
 
-        //
+        //You need to specify a proper flag for the intent. Or else the intent will become deleted.
+        pendingIntent = PendingIntent.getActivity(context,0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        newView.setOnClickPendingIntent(R.id.SettingsButton, pendingIntent);
+        Log.d(TAG, "Settings button has pending intent "+pendingIntent.toString());
+
+
         //endregion
 
         // update the app widget
