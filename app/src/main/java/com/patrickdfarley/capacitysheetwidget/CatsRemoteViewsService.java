@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -25,6 +26,7 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
     private SharedPreferences sharedPreferences;
     private static int mCount;
     private static List<CategoryScore> mCategoryScores = new ArrayList<CategoryScore>();
+    private static int mCatId;
     private Context mContext;
     private int mAppWidgetId;
     private String TAG = "CatsRemoteViewsFactory";
@@ -45,7 +47,7 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         // for example downloading or creating content etc, should be deferred to onDataSetChanged()
         // or getViewAt(). Taking more than 20 seconds in this call will result in an ANR.
 
-        updateScoresFromPrefs();
+        updateDataFromPrefs();
     }
 
 
@@ -73,10 +75,17 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         // text based on the position.
         RemoteViews childView = new RemoteViews(mContext.getPackageName(), R.layout.category_item);
 
-        // retrieve the category info from static field
+        // retrieve the category info from static fields
         CategoryScore catScore = mCategoryScores.get(position);
         childView.setTextViewText(R.id.CatAmount, catScore.score);
         childView.setTextViewText(R.id.CatName, catScore.name);
+
+        // also check if this is the selected list item, in which case we have to highlight it.
+        if (position == mCatId) {
+            childView.setInt(R.id.CatItem, "setBackgroundColor", Color.RED);
+        } else {
+            childView.setInt(R.id.CatItem, "setBackgroundColor", Color.WHITE);
+        }
 
         // Next, we set a fill-intent which will be used to fill-in the pending intent template
         // which is set on the collection view in ListWidgetProvider.
@@ -138,16 +147,19 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         Log.d(TAG,"onDataSetChanged called ...!");
 
         // you gotta update mcategoryscores from sharedprefs
-        updateScoresFromPrefs();
+        updateDataFromPrefs();
     }
 
-    private void updateScoresFromPrefs() {
+    private void updateDataFromPrefs() {
         // populate the static list of categories and scores
         mCount = sharedPreferences.getInt("categoryCount",0);
+
         for (int i = 0; i < mCount; i++) {
             String catName = sharedPreferences.getString("Cat"+i+"Name","error");
             String catAmount = sharedPreferences.getString("Cat"+i,"error");
             mCategoryScores.add(i, new CategoryScore(catName, catAmount));
         }
+
+        mCatId = sharedPreferences.getInt("CatId",0);
     }
 }

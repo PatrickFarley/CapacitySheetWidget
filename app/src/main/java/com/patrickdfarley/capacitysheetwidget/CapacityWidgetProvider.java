@@ -36,7 +36,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     public static final String ENTRY_BUTTON_2 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_2";
     public static final String ENTRY_BUTTON_3 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3";
     public static final String ENTRY_BUTTON_4 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_4";
-    public static final String CAT_ENTRY_ACTION = "com.patrickdfarley.capacitysheetwidget.CAT_ENTRY_ACTION";
+    public static final String CAT_CLICK_ACTION = "com.patrickdfarley.capacitysheetwidget.CAT_ENTRY_ACTION";
 
     public static final String CAT_ID = "com.patrickdfarley.capacitysheetwidget.CAT_ID";
     private static final String ACTION_TIMER_SET = "com.patrickdfarley.capacitysheetwidget.ACTION_TIMER_SET";
@@ -85,7 +85,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
         if (intent.getAction().equals(MANUAL_UPDATE)) {
             Log.d(TAG, "manual update triggered");
 
-            // Handle the update request by calling method...
+            // TODO: I'm not sure if I'm getting these values the right way:
             int[] appWidgetIds = AppWidgetManager.getInstance(context)
                     .getAppWidgetIds(new ComponentName(context, CapacityWidgetProvider.class));
 
@@ -132,19 +132,27 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
 
         // if it was a CategoryName click:
-        if (CAT_ENTRY_ACTION.equals(intent.getAction())) {
+        if (CAT_CLICK_ACTION.equals(intent.getAction())) {
             int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                     AppWidgetManager.INVALID_APPWIDGET_ID);
+
             int catId = intent.getIntExtra(CAT_ID, 0);
+
             Toast.makeText(context, "Item" + catId + " selected", Toast.LENGTH_SHORT).show();
 
+            // save the new cat selection to sharedPrefs
             SharedPreferences.Editor editor = sharedPreferences.edit();
             editor.putInt("CatId", catId);
             editor.apply();
+
+            // also update the UI:
+            // trigger an onReceive to update UI:
+            Intent updateIntent = new Intent(context, CapacityWidgetProvider.class);
+            updateIntent.setAction(CapacityWidgetProvider.MANUAL_UPDATE);
+            context.sendBroadcast(updateIntent);
         }
 
         super.onReceive(context, intent);
-
     }
 
 

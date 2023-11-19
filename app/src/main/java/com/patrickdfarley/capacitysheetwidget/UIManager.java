@@ -10,8 +10,6 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 
-import java.util.Random;
-
 /*
 Sets up UI
  */
@@ -79,8 +77,8 @@ public class UIManager {
 
         // Set the action for the intent.
         // When the user touches a particular view, it will have the effect of
-        // broadcasting CAT_ENTRY_ACTION.
-        catEntryIntent.setAction(CapacityWidgetProvider.CAT_ENTRY_ACTION);
+        // broadcasting CAT_CLICK_ACTION.
+        catEntryIntent.setAction(CapacityWidgetProvider.CAT_CLICK_ACTION);
         catEntryIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         catEntryIntent.setData(Uri.parse(catEntryIntent.toUri(Intent.URI_INTENT_SCHEME)));
         PendingIntent catEntryPendingIntent = PendingIntent.getBroadcast(context, 0, catEntryIntent,
