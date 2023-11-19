@@ -66,8 +66,7 @@ public class UIManager {
         newView.setRemoteAdapter(R.id.CatsList, rvIntent);
         Log.d(TAG, "setting view " + newView.toString() + " remoteAdapter to " + rvIntent.toString());
 
-
-        //remoteViews.removeAllViews(R.id.CatsList);
+        // set what to display when the data is empty.
         newView.setEmptyView(R.id.CatsList, R.id.empty_view);
 
 

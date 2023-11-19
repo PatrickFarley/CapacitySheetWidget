@@ -91,11 +91,11 @@ public class SheetsCallManager {
             for (int i = OFFSETTOP; i < categoryCount + OFFSETTOP; i++) {
                 // get the category name for that row
                 catName = String.valueOf(responseData.get(i).get(0));
-                // get the current week's entered value, assuming it's withing the responseData's range:
-                catAmount = responseData.get(i).size() > currentWeekIndex ? String.valueOf((responseData.get(i).get(currentWeekIndex))) : "";
+                // get the current week's entered value
+                catAmount = String.valueOf(responseData.get(i).get(currentWeekIndex));
                 editor.putString("Cat" + (i - OFFSETTOP), catAmount);
                 editor.putString("Cat" + (i - OFFSETTOP) + "Name", catName);
-                Log.d(TAG, "Category" + catName + " and value " + catAmount + " added to shared prefs.");
+                Log.d(TAG, "Category " + catName + " and value " + catAmount + " added to shared prefs.");
             }
             editor.apply();
         }

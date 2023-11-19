@@ -24,7 +24,7 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
 
     private SharedPreferences sharedPreferences;
     private static int mCount;
-    private List<CategoryScore> mCategoryScores = new ArrayList<CategoryScore>();
+    private static List<CategoryScore> mCategoryScores = new ArrayList<CategoryScore>();
     private Context mContext;
     private int mAppWidgetId;
     private String TAG = "CatsRemoteViewsFactory";
@@ -34,9 +34,8 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         mAppWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                 AppWidgetManager.INVALID_APPWIDGET_ID);
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        mCount = sharedPreferences.getInt("categoryCount",0);
     }
-    
+
     // Initialize the data set.
     @Override
     public void onCreate() {
@@ -45,9 +44,8 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         // In onCreate() you setup any connections / cursors to your data source. Heavy lifting,
         // for example downloading or creating content etc, should be deferred to onDataSetChanged()
         // or getViewAt(). Taking more than 20 seconds in this call will result in an ANR.
-        for (int i = 0; i < mCount; i++) {
-            mCategoryScores.add(new CategoryScore("Cat" + i, "some number"));
-        }
+
+        updateScoresFromPrefs();
     }
 
 
@@ -75,11 +73,10 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         // text based on the position.
         RemoteViews childView = new RemoteViews(mContext.getPackageName(), R.layout.category_item);
 
-        String catName = sharedPreferences.getString("Cat"+position+"Name","error");
-        String catAmount = sharedPreferences.getString("Cat"+position,"error");
-        Log.d(TAG, "cat name is "+ catName);
-        childView.setTextViewText(R.id.CatAmount, catAmount );
-        childView.setTextViewText(R.id.CatName, catName);
+        // retrieve the category info from static field
+        CategoryScore catScore = mCategoryScores.get(position);
+        childView.setTextViewText(R.id.CatAmount, catScore.score);
+        childView.setTextViewText(R.id.CatName, catScore.name);
 
         // Next, we set a fill-intent which will be used to fill-in the pending intent template
         // which is set on the collection view in ListWidgetProvider.
@@ -133,12 +130,24 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
     @Override
     public void onDataSetChanged() {
         // This is triggered when you call AppWidgetManager notifyAppWidgetViewDataChanged
-        // on the collection view corresponding to this factory. You can do heaving lifting in
+        // on the collection view corresponding to this factory. You can do heavy lifting in
         // here, synchronously. For example, if you need to process an image, fetch something
         // from the network, etc., it is ok to do it here, synchronously. The widget will remain
         // in its current state while work is being done here, so you don't need to worry about
         // locking up the widget.
         Log.d(TAG,"onDataSetChanged called ...!");
+
+        // you gotta update mcategoryscores from sharedprefs
+        updateScoresFromPrefs();
     }
 
+    private void updateScoresFromPrefs() {
+        // populate the static list of categories and scores
+        mCount = sharedPreferences.getInt("categoryCount",0);
+        for (int i = 0; i < mCount; i++) {
+            String catName = sharedPreferences.getString("Cat"+i+"Name","error");
+            String catAmount = sharedPreferences.getString("Cat"+i,"error");
+            mCategoryScores.add(i, new CategoryScore(catName, catAmount));
+        }
+    }
 }

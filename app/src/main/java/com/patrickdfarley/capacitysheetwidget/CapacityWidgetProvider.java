@@ -149,13 +149,13 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
 
 
-    private void updateUI(final Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+    private void updateUI(final Context context, final AppWidgetManager appWidgetManager, final int[] appWidgetIds) {
         Log.d(TAG,"updateUI called");
         final int N = appWidgetIds.length;
 
         // Perform this loop procedure for each App Widget that belongs to this provider
         for (int i = 0; i < N; i++) {
-            int appWidgetId = appWidgetIds[i];
+            final int appWidgetId = appWidgetIds[i];
 
             // Get the default view for the App Widget layout
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.capacity_appwidget);
@@ -168,10 +168,10 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             mCredential.setSelectedAccountName(accountName);
 
             // get sheet data and update UI:
+
             final UIManager uIManager = new UIManager(context, appWidgetId, appWidgetManager, views);
 
-            // we create this mainThreadHandler to run after the async sheets task runs.
-            // It executes in the main thread.
+            // we create this mainThreadHandler to run after the async sheets task runs. It executes in the main thread.
             final Handler mainThreadHandler = new Handler(Looper.getMainLooper()); // This is a deprecated method; might want to update the Android version
             Executors.newSingleThreadExecutor().execute(new Runnable() {
                 @Override
@@ -179,6 +179,12 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
                     SheetsCallManager sheetsCallManager = new SheetsCallManager(mCredential, context);
                     sheetsCallManager.saveMetaDataToPrefs();
 
+                    // and then need to notify the CatsRemoteViewsService that cat data was updated
+                    AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.CatsList);
+                    Log.d(TAG,"notifyAppWidgetViewDataChanged");
+
+                    // then call UI update in the main thread
                     mainThreadHandler.post(new Runnable() {
                         @Override
                         public void run() {
