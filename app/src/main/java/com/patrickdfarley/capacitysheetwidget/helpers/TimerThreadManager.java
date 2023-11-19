@@ -6,6 +6,9 @@ import android.util.Log;
 
 import java.util.Timer;
 
+/*
+This is a singleton class: static method returns an instance of it. It manages the EntryAmount countdown timer.
+ */
 public class TimerThreadManager {
 
     private final String TAG = "TimerThreadManager";

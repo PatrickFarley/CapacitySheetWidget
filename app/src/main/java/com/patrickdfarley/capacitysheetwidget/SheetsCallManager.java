@@ -17,18 +17,22 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/*
+This class only interacts with google sheets and the sharedPrefs. It should be run in the background.
+ */
 public class SheetsCallManager {
 
     private com.google.api.services.sheets.v4.Sheets sheetsService;
     private Exception mLastError = null;
     private static final String TAG = "SheetsCallManager";
     private static final int OFFSETTOP = 3;
-    private static final int OFFSETBOTTOM = 2;
+    private static final int OFFSETBOTTOM = 1;
     private Context context;
-    private SharedPreferences sharedPreferences;
+    private SharedPreferences sharedPrefs;
 
     SheetsCallManager(GoogleAccountCredential credential, Context context) {
         HttpTransport transport = AndroidHttp.newCompatibleTransport();
@@ -41,8 +45,10 @@ public class SheetsCallManager {
                 .setApplicationName("@string/app_name")
                 .build();
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
     }
+
+    // TODO: you need error handling for index-out-of-bounds exceptions. Anywhere that data is retrieved, you need to handle errors.
 
 
     /**
@@ -53,7 +59,7 @@ public class SheetsCallManager {
     public void saveMetaDataToPrefs() {
 
         // get all sheet data
-        List<List<Object>> responseData = GetAllSheetData(false);
+        List<List<Object>> responseData = GetSheetDataInRange(false);
 
         if (responseData == null || responseData.size() == 0) {
             Log.d(TAG, "No results returned!");
@@ -63,7 +69,7 @@ public class SheetsCallManager {
 
             // save category count to preferences
             int categoryCount = responseData.size() - OFFSETBOTTOM - OFFSETTOP;
-            SharedPreferences.Editor editor = sharedPreferences.edit();
+            SharedPreferences.Editor editor = sharedPrefs.edit();
             editor.putInt("categoryCount", categoryCount);
 
             // save current week index to preferences
@@ -98,16 +104,16 @@ public class SheetsCallManager {
 
     public void addMinuteData(int catID, int entryAmount){
         // get all sheet data
-        List<List<Object>> rawResponseData = GetAllSheetData(true);
+        List<List<Object>> rawResponseData = GetSheetDataInRange(true);
 
-        String spreadsheetId = sharedPreferences.getString("SpreadsheetId", "");
-        String sheetName = sharedPreferences.getString("SheetName", "");
-        String dataRange = sharedPreferences.getString("DataRange", "");
+        String spreadsheetId = sharedPrefs.getString("SpreadsheetId", "");
+        String sheetName = sharedPrefs.getString("SheetName", "");
+        String dataRange = sharedPrefs.getString("DataRange", "");
 
 
         // pinpoint the particular category data we want
         int catRow = catID + OFFSETTOP;
-        int currentWeekIndex = sharedPreferences.getInt("CurrentWeekIndex", 0);
+        int currentWeekIndex = sharedPrefs.getInt("CurrentWeekIndex", 0);
         Point cellPoint = new Point(catRow,currentWeekIndex);
         Log.d(TAG,"point is "+ cellPoint.toString());
         Log.d(TAG, "going to get point "+ cellPoint.x + cellPoint.y + " for responseData " + rawResponseData.toString());
@@ -143,12 +149,14 @@ public class SheetsCallManager {
                     .execute();
             Log.d(TAG, "New cat data "+ newCatData + " written successfully!");
             // TODO: log the operation in the undo stack here.
-            // TODO: update the UI here.
+
+            // TODO: call OnUpdate here.
+
             return;
         } catch (Exception e) {
             Log.d(TAG, "data write error is: " + String.valueOf(e.getCause()));
             if (e instanceof UserRecoverableAuthIOException) {
-                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
+                // TODO: So what's going on here? Why does that exception get thrown?
             }
             mLastError = e;
             return;
@@ -162,12 +170,12 @@ public class SheetsCallManager {
      * It is private - the raw data is handled by other methods in this class.
      * @return
      */
-    private List<List<Object>> GetAllSheetData(boolean raw) {
+    private List<List<Object>> GetSheetDataInRange(boolean raw) {
         //TODO: don't hardcode these strings. or at least put them in constructor
         // fetch sheet identifier data from the sharedprefs
-        String spreadsheetId = sharedPreferences.getString("SpreadsheetId", "");
-        String sheetName = sharedPreferences.getString("SheetName", "");
-        String dataRange = sharedPreferences.getString("DataRange", "");
+        String spreadsheetId = sharedPrefs.getString("SpreadsheetId", "");
+        String sheetName = sharedPrefs.getString("SheetName", "");
+        String dataRange = sharedPrefs.getString("DataRange", "");
 
         // convert to two points (row,col)
         Point[] dataRangePoints = A12Coords(dataRange);
@@ -178,7 +186,9 @@ public class SheetsCallManager {
 
         // create an A1 string for use in Sheets API lookup
         final String finalRange = "'" + sheetName + "'!" + Coords2A1(dataRangePoints);
-        Log.d(TAG, "finalRange: " + finalRange);
+
+        Log.d(TAG, "finalRange (coords): " + dataRangePoints[0].x + "," + dataRangePoints[0].y + " - " + dataRangePoints[1].x + "," + dataRangePoints[1].y);
+        Log.d(TAG, "finalRange (A1): " + finalRange);
 
         try {
             String valueRenderOption = raw ? "FORMULA" : "FORMATTED_VALUE";
@@ -187,11 +197,14 @@ public class SheetsCallManager {
             ValueRange response = this.sheetsService.spreadsheets().values()
                     .get(spreadsheetId, finalRange).setValueRenderOption(valueRenderOption)
                     .execute();
+            // issue here is that empty cells get left out.
             responseData = response.getValues();
 
-            Log.d(TAG, "response data (whole range): " + responseData);
+            //a data-cleaning method that looks for rows or columns that were cut off, and inserts empty strings there.
+            List<List<Object>> responseDataCleaned = CleanResponseData(responseData,dataRangePoints);
 
-            return responseData;
+            Log.d(TAG, "response data (whole range (cleaned)): " + responseDataCleaned);
+            return responseDataCleaned;
         } catch (Exception e) {
             Log.d(TAG, "data get error is " + (e.getCause()));
             if (e instanceof UserRecoverableAuthIOException) {
@@ -212,7 +225,6 @@ public class SheetsCallManager {
     }
 
 
-
     /**
      * Using sharedprefs, get the current week's cat scores and success score and return
      * a Result object with these values.
@@ -221,11 +233,11 @@ public class SheetsCallManager {
      */
     private WeekDataResult GetWeekData() {
 
-        int currentWeekIndex = sharedPreferences.getInt("CurrentWeekIndex", 0);
-        String spreadsheetId = sharedPreferences.getString("SpreadsheetId", "");
-        String sheetName = sharedPreferences.getString("SheetName", "");
-        String dataRange = sharedPreferences.getString("DataRange", "");
-        int categoryCount = sharedPreferences.getInt("categoryCount", 0);
+        int currentWeekIndex = sharedPrefs.getInt("CurrentWeekIndex", 0);
+        String spreadsheetId = sharedPrefs.getString("SpreadsheetId", "");
+        String sheetName = sharedPrefs.getString("SheetName", "");
+        String dataRange = sharedPrefs.getString("DataRange", "");
+        int categoryCount = sharedPrefs.getInt("categoryCount", 0);
 
         // convert to two points (row,col)
         Point[] dataRangePoints = A12Coords(dataRange);
@@ -257,7 +269,7 @@ public class SheetsCallManager {
         for (int i = 0; i < categoryCount; i++) {
             // get the current week's entered value, assuming it's withing the responseData's range:
             catScore = String.valueOf(weekData.get(i).get(0));
-            catName = sharedPreferences.getString("Cat" + i, "");
+            catName = sharedPrefs.getString("Cat" + i, "");
             toReturn.addCategory(catName, catScore);
         }
 
@@ -268,6 +280,27 @@ public class SheetsCallManager {
     }
 
 // region Helper Methods
+
+    private List<List<Object>> CleanResponseData(List<List<Object>> responseData, Point[] dataRangePoints) {
+        List<List<Object>> filledValues = new ArrayList<>();
+
+        // Determine the number of columns in the range
+        int maxColumns = dataRangePoints[1].y - dataRangePoints[0].y;
+        Log.d(TAG, "max columns is "+maxColumns);
+
+        // for each row in response data:
+        for (List<Object> row : responseData) {
+            // Calculate the number of null values to add to reach the desired length
+            int paddingSize = Math.max(0, maxColumns - row.size());
+
+            // Add null values to the end of the row
+            for (int i = 0; i < paddingSize; i++) {
+                row.add("");
+            }
+            filledValues.add(row);
+        }
+        return filledValues;
+    }
 
     private int getCurrentWeekIndex(List<List<Object>> output) {
 //        Scanner sc = new Scanner((String) output.get(0).get(0));

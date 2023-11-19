@@ -16,6 +16,7 @@ import com.patrickdfarley.capacitysheetwidget.CatsRemoteViewsService;
 import com.patrickdfarley.capacitysheetwidget.R;
 
 /**
+ * This doesn't appear to be used.
  * This class takes a context, gets the sharedprefs from that context
  * Created by pdfarley on 9/9/2019.
  */

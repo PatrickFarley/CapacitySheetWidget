@@ -2,6 +2,7 @@ package com.patrickdfarley.capacitysheetwidget;
 
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -36,18 +37,18 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
     public static final String ENTRY_BUTTON_3 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3";
     public static final String ENTRY_BUTTON_4 = "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_4";
     public static final String CAT_ENTRY_ACTION = "com.patrickdfarley.capacitysheetwidget.CAT_ENTRY_ACTION";
-    public static final String SETTINGS_BUTTON_ACTION = "com.patrickdfarley.capacitysheetwidget.SETTINGS_BUTTON_ACTION";
 
     public static final String CAT_ID = "com.patrickdfarley.capacitysheetwidget.CAT_ID";
     private static final String ACTION_TIMER_SET = "com.patrickdfarley.capacitysheetwidget.ACTION_TIMER_SET";
+    public static final String MANUAL_UPDATE = "com.patrickdfarley.capacitysheetwidget.MANUAL_UPDATE";
+
 
     //TODO: probably shouldn't have this both here and in MainActivity
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
 
 
     /**
-     * this is trigger on a timetable, OR can be triggered manually by an intent. it's triggered
-     * for some set of app widget IDs. It should update the UI
+     * this is triggered on a timetable, OR can be triggered manually by an intent. it's triggered for some set of app widget IDs. It should update the UI
      *
      * @param context
      * @param appWidgetManager
@@ -61,41 +62,12 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             return;
         }
 
-        final int N = appWidgetIds.length;
+        updateUI(context, appWidgetManager, appWidgetIds);
 
-        // Perform this loop procedure for each App Widget that belongs to this provider
-        for (int i = 0; i < N; i++) {
-            int appWidgetId = appWidgetIds[i];
 
-            // Get the default view for the App Widget layout
-            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.capacity_appwidget);
-
-            // TODO: This is unsafe; this class doesn't have access to all the credential checks that MainActivity has.
-            mCredential = GoogleAccountCredential.usingOAuth2(
-                    context, Arrays.asList(SCOPES))
-                    .setBackOff(new ExponentialBackOff());
-            String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
-            mCredential.setSelectedAccountName(accountName);
-
-            // get sheet data and update UI:
-            final UIManager uIManager = new UIManager(context, appWidgetId, appWidgetManager, views);
-            final Handler mainThreadHandler = new Handler(Looper.getMainLooper()); // TODO: this is a deprecated method; might want to update the Android version
-            Executors.newSingleThreadExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    SheetsCallManager sheetsCallManager = new SheetsCallManager(mCredential, context);
-                    sheetsCallManager.saveMetaDataToPrefs();
-
-                    mainThreadHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            uIManager.updateUI();
-                        }
-                    });
-                }
-            });
-        }
     }
+
+
 
     /**
      * receives many kinds of inputs.
@@ -109,7 +81,22 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
         final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
-        // if it was an entry button click:
+        // If it was a manual update request:
+        if (intent.getAction().equals(MANUAL_UPDATE)) {
+            Log.d(TAG, "manual update triggered");
+
+            // Handle the update request by calling method...
+            int[] appWidgetIds = AppWidgetManager.getInstance(context)
+                    .getAppWidgetIds(new ComponentName(context, CapacityWidgetProvider.class));
+
+            if (appWidgetIds.length > 0) {
+                AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+
+                updateUI(context,appWidgetManager,appWidgetIds);
+            }
+        }
+
+            // if it was an entry button click:
         if (ENTRY_BUTTON_0.equals(intent.getAction()) || ENTRY_BUTTON_1.equals(intent.getAction())
                 || ENTRY_BUTTON_2.equals(intent.getAction()) || ENTRY_BUTTON_3.equals(intent.getAction())
                 || ENTRY_BUTTON_4.equals(intent.getAction())) {
@@ -156,20 +143,51 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
             editor.apply();
         }
 
-        /*// if it was a SettingsButton click:
-        if (SETTINGS_BUTTON_ACTION.equals(intent.getAction())) {
-            int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
-                    AppWidgetManager.INVALID_APPWIDGET_ID);
-            int catId = intent.getIntExtra(CAT_ID, 0);
-            Toast.makeText(context, "Item" + catId + " selected", Toast.LENGTH_SHORT).show();
-
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putInt("CatId", catId);
-            editor.apply();
-        }*/
-
         super.onReceive(context, intent);
 
+    }
+
+
+
+    private void updateUI(final Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+        Log.d(TAG,"updateUI called");
+        final int N = appWidgetIds.length;
+
+        // Perform this loop procedure for each App Widget that belongs to this provider
+        for (int i = 0; i < N; i++) {
+            int appWidgetId = appWidgetIds[i];
+
+            // Get the default view for the App Widget layout
+            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.capacity_appwidget);
+
+            // TODO: This is unsafe; this class doesn't have access to all the credential checks that MainActivity has.
+            mCredential = GoogleAccountCredential.usingOAuth2(
+                    context, Arrays.asList(SCOPES))
+                    .setBackOff(new ExponentialBackOff());
+            String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
+            mCredential.setSelectedAccountName(accountName);
+
+            // get sheet data and update UI:
+            final UIManager uIManager = new UIManager(context, appWidgetId, appWidgetManager, views);
+
+            // we create this mainThreadHandler to run after the async sheets task runs.
+            // It executes in the main thread.
+            final Handler mainThreadHandler = new Handler(Looper.getMainLooper()); // This is a deprecated method; might want to update the Android version
+            Executors.newSingleThreadExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    SheetsCallManager sheetsCallManager = new SheetsCallManager(mCredential, context);
+                    sheetsCallManager.saveMetaDataToPrefs();
+
+                    mainThreadHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            uIManager.updateUI();
+                        }
+                    });
+                }
+            });
+        }
     }
     //region helper methods
 
@@ -178,7 +196,7 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
         toast.show();
     }
 
-    private Runnable constructTimerRunnable(SharedPreferences sharedPrefs, final Context context, final SheetsCallManager sheetsCallManager) {
+    private Runnable constructTimerRunnable(final SharedPreferences sharedPrefs, final Context context, final SheetsCallManager sheetsCallManager) {
 
         final int catId = sharedPrefs.getInt("CatId", -1);
         final int entryAmount = sharedPrefs.getInt("EntryAmount", -1);
@@ -192,6 +210,17 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
                     @Override
                     public void run() {
                         sheetsCallManager.addMinuteData(catId,entryAmount);
+
+                        // zero out the EntryAmount
+                        SharedPreferences.Editor editor = sharedPrefs.edit();
+                        editor.putInt("EntryAmount", 0);
+                        editor.apply();
+
+                        // trigger an onReceive to update UI:
+                        Intent updateIntent = new Intent(context, CapacityWidgetProvider.class);
+                        updateIntent.setAction(CapacityWidgetProvider.MANUAL_UPDATE);
+                        context.sendBroadcast(updateIntent);
+
                     }
                 });
             }

@@ -39,7 +39,7 @@
             android:inputType="text"
             android:padding="8dp"
 
-            android:text="1Vg7gsEEl2sK8m9EXCNQmR60JkkMRCtwenWAJpuZuL5o"/>
+            android:text="1bbOAYmGOCgvjsbpJP_9wwqJ21iWLUoUckP207ucB35o"/>
     </LinearLayout>
 
     <LinearLayout
@@ -66,7 +66,7 @@
             android:inputType="text"
             android:padding="8dp"
 
-            android:text="Spring / Summer"
+            android:text="2023-24"
             />
 
     </LinearLayout>
@@ -95,7 +95,7 @@
             android:inputType="text"
             android:padding="8dp"
 
-            android:text="A4:AB11"/>
+            android:text="A4:BB14"/>
 
     </LinearLayout>
 

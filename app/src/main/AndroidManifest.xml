@@ -26,8 +26,8 @@
         <receiver android:name="CapacityWidgetProvider" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <!-- The AppWidgetManager automatically sends all other App Widget broadcasts to the AppWidgetProvider as necessary. -->
 
+                <!-- The AppWidgetManager automatically sends all other App Widget broadcasts to the AppWidgetProvider as necessary. -->
                 <action android:name="com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON0" />
                 <action android:name="com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON1" />
                 <action android:name="com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON2" />

@@ -35,8 +35,8 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
                 AppWidgetManager.INVALID_APPWIDGET_ID);
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         mCount = sharedPreferences.getInt("categoryCount",0);
-
     }
+    
     // Initialize the data set.
     @Override
     public void onCreate() {
