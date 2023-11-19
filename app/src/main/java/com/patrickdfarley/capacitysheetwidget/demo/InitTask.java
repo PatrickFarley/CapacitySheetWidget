@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * ONLY A DEMO CLASS, DON'T CALL.
  * An asynchronous task that handles the initial Google Sheets API read call.
  * Placing the API calls in their own task ensures the UI stays responsive.
  */
@@ -47,7 +48,6 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
     private Context context;
     private SharedPreferences sharedPreferences;
 
-    // TODO these should probably be getter/setter instead of public vars (or done in the constructor?)
     public AppWidgetManager appWidgetManager;
     public int appWidgetId;
     public RemoteViews remoteViews;
@@ -93,7 +93,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
         } catch (Exception e) {
             Log.d(TAG, e.getCause().toString());
             if (e instanceof UserRecoverableAuthIOException) {
-                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
+                //  what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
 //                Intent authorizationIntent = new Intent(this,
 //                        GmailAuthorizationActivity.class)
 //                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -118,8 +118,6 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
      */
     private List<List<Object>> getSheetData() throws IOException {
 
-        //TODO: don't hardcode these strings.
-        // fetch sheet identifier data from the sharedprefs
         String spreadsheetId = sharedPreferences.getString("SpreadsheetId","");
         String sheetName = sharedPreferences.getString("SheetName","");
         String dataRange = sharedPreferences.getString("DataRange","");
@@ -209,7 +207,6 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
             // minute entry buttons:
             // Each button sends an intent (carrying an integer amount) to trigger a response from the widgetprovider
-            //TODO these shouldn't be hardcoded
             int[] entryAmounts = {1,5,20,60,100};
             int[] entryIds = {R.id.OneButton, R.id.FiveButton, R.id.TwentyButton, R.id.SixtyButton, R.id.OneHundredButton};
             String[] entryActionIds = {"com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_0",
@@ -220,7 +217,7 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
 
             for (int i=0;i<entryAmounts.length;i++) {
                 intent = new Intent(context, CapacityWidgetProvider.class);
-                intent.setAction(entryActionIds[i]); //TODO handle strings correctly
+                intent.setAction(entryActionIds[i]); 
                 intent.putExtra("amount", entryAmounts[i]);
                 //You need to specify a proper flag for the intent. Or else the intent will become deleted.
                 pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -228,8 +225,8 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
                 Log.d(TAG, "Entry id "+ entryIds[i] + " has pending intent "+pendingIntent.toString());
             }
 
-            // TODO Settings button onclicklistener
-        //endregion
+
+            //endregion
 
             // update the app widget (This triggers OnUpdate)
             appWidgetManager.updateAppWidget(appWidgetId, newView);
@@ -243,7 +240,6 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
         mProgress.hide();
         if (mLastError != null) {
             if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
-                // TODO: this should've been handled elsewhere so prob doesn't need to be handled here.
 //                showGooglePlayServicesAvailabilityErrorDialog(
 //                        ((GooglePlayServicesAvailabilityIOException) mLastError)
 //                                .getConnectionStatusCode());
