@@ -60,7 +60,7 @@ public class UIManager {
         rvIntent.setData(Uri.parse(rvIntent.toUri(rvIntent.URI_INTENT_SCHEME)));
 
         // set the CatsList's adapter to our CatsRemoteViewsService intent
-        // TODO: this only works the first time. after that, the adapter persists. you need to call OnDataChanged if you want further updates.
+        // This only calls the getViews method the first time it's done. after that, the adapter persists.
         newView.setRemoteAdapter(R.id.CatsList, rvIntent);
         Log.d(TAG, "setting view " + newView.toString() + " remoteAdapter to " + rvIntent.toString());
 

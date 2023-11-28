@@ -295,6 +295,7 @@ public class MainActivity extends Activity {
                 }
                 break;
             case REQUEST_AUTHORIZATION:
+                Log.d(TAG,"resultcode is "+resultCode);
                 if (resultCode == RESULT_OK) {
                     createCredential();
                 }

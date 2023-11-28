@@ -1,6 +1,7 @@
 package com.patrickdfarley.capacitysheetwidget;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.preference.PreferenceManager;
@@ -149,9 +150,7 @@ public class SheetsCallManager {
                     .execute();
             Log.d(TAG, "New cat data "+ newCatData + " written successfully!");
             // TODO: log the operation in the undo stack here.
-
-            // TODO: call OnUpdate here.
-
+            
             return;
         } catch (Exception e) {
             Log.d(TAG, "data write error is: " + String.valueOf(e.getCause()));
@@ -208,7 +207,8 @@ public class SheetsCallManager {
         } catch (Exception e) {
             Log.d(TAG, "data get error is " + (e.getCause()));
             if (e instanceof UserRecoverableAuthIOException) {
-//                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
+                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
+
 //                Intent authorizationIntent = new Intent(this,
 //                        GmailAuthorizationActivity.class)
 //                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
