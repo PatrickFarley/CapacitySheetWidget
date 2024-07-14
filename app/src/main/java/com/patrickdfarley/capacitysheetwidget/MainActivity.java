@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager;
 import android.net.Uri;
 import android.os.Bundle;
 
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.services.sheets.v4.SheetsScopes;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -54,7 +55,7 @@ public class MainActivity extends Activity {
     static final String MYPREFERENCES = "MyPrefs";
     private static final String TAG = "MainActivity";
     private static final String PREF_ACCOUNT_NAME = "Capacity Sheet Account Name";
-    private static final String[] SCOPES = { SheetsScopes.SPREADSHEETS_READONLY, SheetsScopes.SPREADSHEETS };
+    private static final String[] SCOPES = { SheetsScopes.SPREADSHEETS_READONLY, SheetsScopes.SPREADSHEETS};
 
     SharedPreferences sharedpreferences;
 
@@ -131,14 +132,20 @@ public class MainActivity extends Activity {
 
             // update UI:
             final UIManager uIManager = new UIManager(this, appWidgetId, appWidgetManager, newView);
+            // we create this mainThreadHandler to run after the async sheets task runs. It executes in the main thread.
             final Handler mainThreadHandler = new Handler(Looper.getMainLooper()); // TODO: this is a deprecated method; might want to update the Android version
             final Context contextCopy = this;
             Executors.newSingleThreadExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
                     SheetsCallManager sheetsCallManager = new SheetsCallManager(mCredential, contextCopy);
-                    sheetsCallManager.saveMetaDataToPrefs();
+                    try{
+                        sheetsCallManager.saveMetaDataToPrefs();
+                    } catch (UserRecoverableAuthIOException e){
+                        startActivityForResult(e.getIntent(), REQUEST_AUTHORIZATION);
+                    }
 
+                    // then call UI update in the main thread
                     mainThreadHandler.post(new Runnable(){
                         @Override
                         public void run() {
@@ -233,11 +240,13 @@ public class MainActivity extends Activity {
 
 //                GoogleAccountManager mgr = new GoogleAccountManager(this);
 //                Account[] accountList = mgr.getAccounts();
+                Log.d(TAG,"accountName was "+accountName);
                 tempCredential.setSelectedAccountName(accountName);
                 createCredential();
             } else {
                 // when we don't have an account stored in preferences
                 // Start a dialog from which the user can choose an account
+                Log.d(TAG,"requesting user to choose account");
                 startActivityForResult(
                         tempCredential.newChooseAccountIntent(), REQUEST_ACCOUNT_PICKER);
             }

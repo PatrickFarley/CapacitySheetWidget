@@ -14,6 +14,7 @@ import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.patrickdfarley.capacitysheetwidget.helpers.TimerThreadManager;
@@ -133,12 +134,11 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
         // if it was a CategoryName click:
         if (CAT_CLICK_ACTION.equals(intent.getAction())) {
-            int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
-                    AppWidgetManager.INVALID_APPWIDGET_ID);
+            // int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
 
             int catId = intent.getIntExtra(CAT_ID, 0);
 
-            Toast.makeText(context, "Item" + catId + " selected", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(context, "Item" + catId + " selected", Toast.LENGTH_SHORT).show();
 
             // save the new cat selection to sharedPrefs
             SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -158,25 +158,29 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
 
 
     private void updateUI(final Context context, final AppWidgetManager appWidgetManager, final int[] appWidgetIds) {
+
+        // TODO: This method actually pulls sheet data (saveMetaDataToPrefs) as well as triggers the UIManager's UI update. Another intent should be able to just trigger UIManager's UI update (For sharedPrefs that are already save) - it will be quicker.
+
+
         Log.d(TAG,"updateUI called");
         final int N = appWidgetIds.length;
+
+        // Get the default view for the App Widget layout
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.capacity_appwidget);
+
+        // get a Credential
+        // TODO: This is unsafe; this class doesn't have access to all the credential checks that MainActivity has.
+        mCredential = GoogleAccountCredential.usingOAuth2(
+                context, Arrays.asList(SCOPES))
+                .setBackOff(new ExponentialBackOff());
+        String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
+        mCredential.setSelectedAccountName(accountName);
 
         // Perform this loop procedure for each App Widget that belongs to this provider
         for (int i = 0; i < N; i++) {
             final int appWidgetId = appWidgetIds[i];
 
-            // Get the default view for the App Widget layout
-            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.capacity_appwidget);
-
-            // TODO: This is unsafe; this class doesn't have access to all the credential checks that MainActivity has.
-            mCredential = GoogleAccountCredential.usingOAuth2(
-                    context, Arrays.asList(SCOPES))
-                    .setBackOff(new ExponentialBackOff());
-            String accountName = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_ACCOUNT_NAME, null);
-            mCredential.setSelectedAccountName(accountName);
-
             // get sheet data and update UI:
-
             final UIManager uIManager = new UIManager(context, appWidgetId, appWidgetManager, views);
 
             // we create this mainThreadHandler to run after the async sheets task runs. It executes in the main thread.
@@ -185,10 +189,14 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
                 @Override
                 public void run() {
                     SheetsCallManager sheetsCallManager = new SheetsCallManager(mCredential, context);
-                    sheetsCallManager.saveMetaDataToPrefs();
+                    try {
+                        sheetsCallManager.saveMetaDataToPrefs();
+                    } catch (Exception e){
+                        return;
+                    }
 
                     // and then need to notify the CatsRemoteViewsService that cat data was updated
-                    AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+                    //AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
                     appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.CatsList);
                     Log.d(TAG,"notifyAppWidgetViewDataChanged");
 
@@ -223,7 +231,11 @@ public class CapacityWidgetProvider extends AppWidgetProvider {
                 Executors.newSingleThreadExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
-                        sheetsCallManager.addMinuteData(catId,entryAmount);
+                        try {
+                            sheetsCallManager.addMinuteData(catId, entryAmount);
+                        } catch (Exception e){
+                            return;
+                        }
 
                         // zero out the EntryAmount
                         SharedPreferences.Editor editor = sharedPrefs.edit();

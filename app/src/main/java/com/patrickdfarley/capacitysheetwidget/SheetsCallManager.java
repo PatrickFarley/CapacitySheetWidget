@@ -57,7 +57,7 @@ public class SheetsCallManager {
      * other methods to use.
      *
      */
-    public void saveMetaDataToPrefs() {
+    public void saveMetaDataToPrefs() throws UserRecoverableAuthIOException {
 
         // get all sheet data
         List<List<Object>> responseData = GetSheetDataInRange(false);
@@ -103,9 +103,9 @@ public class SheetsCallManager {
     }
 
 
-    public void addMinuteData(int catID, int entryAmount){
+    public void addMinuteData(int catID, int entryAmount) throws UserRecoverableAuthIOException{
         // get all sheet data
-        List<List<Object>> rawResponseData = GetSheetDataInRange(true);
+            List<List<Object>> rawResponseData = GetSheetDataInRange(true);
 
         String spreadsheetId = sharedPrefs.getString("SpreadsheetId", "");
         String sheetName = sharedPrefs.getString("SheetName", "");
@@ -169,7 +169,7 @@ public class SheetsCallManager {
      * It is private - the raw data is handled by other methods in this class.
      * @return
      */
-    private List<List<Object>> GetSheetDataInRange(boolean raw) {
+    private List<List<Object>> GetSheetDataInRange(boolean raw) throws UserRecoverableAuthIOException {
         //TODO: don't hardcode these strings. or at least put them in constructor
         // fetch sheet identifier data from the sharedprefs
         String spreadsheetId = sharedPrefs.getString("SpreadsheetId", "");
@@ -207,8 +207,10 @@ public class SheetsCallManager {
         } catch (Exception e) {
             Log.d(TAG, "data get error is " + (e.getCause()));
             if (e instanceof UserRecoverableAuthIOException) {
-                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
 
+                throw (UserRecoverableAuthIOException)e;
+                // TODO: So what's going on here? Why does that exception get thrown, and what does the following (recycled) code do to address it?
+//
 //                Intent authorizationIntent = new Intent(this,
 //                        GmailAuthorizationActivity.class)
 //                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -217,7 +219,8 @@ public class SheetsCallManager {
 //                authorizationIntent.putExtra("request_authorization",
 //                        ((UserRecoverableAuthIOException) e).getIntent());
 //
-//                getContext().startActivity(authorizationIntent);
+//                context.startActivity(authorizationIntent);
+//                startActivityForResult(e.getIntent(),"AUTHORIZE_DRIVE_ACCESS_REQUEST_CODE");
             }
             mLastError = e;
             return null;
