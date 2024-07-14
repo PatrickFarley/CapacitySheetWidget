@@ -19,9 +19,7 @@ public class UIManager {
     private RemoteViews newView;
     private AppWidgetManager appWidgetManager;
     private int appWidgetId;
-    // TODO: these should universalized.
-    private static final int OFFSETTOP = 3;
-    private static final int OFFSETBOTTOM = 2;
+
 
     private Context context;
     private SharedPreferences sharedPreferences;
@@ -39,15 +37,9 @@ public class UIManager {
      * This reads from shared prefs. Ideally it would take an object param instead.
      */
     public void updateUI() {
-//        if (weekData == null || weekData.categories.size() == 0) {
-//            Log.d(TAG, "No results passed!");
-//        } else {
-//            // display data again, now newline-delimited
-//            Log.d(TAG, weekData.toString());
 
-        // update our RemoteViews category list from the newly updated preferences
-        // Also adds onclick listeners
-        //newView = new SharedPreferenceReader(context).TransferCategoryData(newView, appWidgetId);
+        // update our RemoteViews category list from the newly updated sharedpreferences
+        // Also adds their onclick listeners
 
         //region set CatsList remote adapter
 
