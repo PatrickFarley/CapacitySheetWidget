@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -68,8 +70,7 @@ public class UIManager {
         Intent catEntryIntent = new Intent(context, CapacityWidgetProvider.class);
 
         // Set the action for the intent.
-        // When the user touches a particular view, it will have the effect of
-        // broadcasting CAT_CLICK_ACTION.
+        // When the user touches a particular view, it will have the effect of broadcasting CAT_CLICK_ACTION.
         catEntryIntent.setAction(CapacityWidgetProvider.CAT_CLICK_ACTION);
         catEntryIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         catEntryIntent.setData(Uri.parse(catEntryIntent.toUri(Intent.URI_INTENT_SCHEME)));
@@ -82,11 +83,12 @@ public class UIManager {
         StringBuilder builder = new StringBuilder();
         builder.append("week ");
         builder.append(sharedPreferences.getString("weekDate", "")); //TODO: use SharedPreferencesReader class for this, too.
-        builder.append(" ");
+        builder.append("   ");
         builder.append(sharedPreferences.getString("successScore", "")); // bottom row: success metric
         newView.setTextViewText(R.id.DisplayBar, builder); // add this string to the DisplayBar element of the view.
 
         //region Assign OnClickListeners
+
         // assign the DisplayBar's onclicklistener to trigger OnUpdate
         Intent intent;
         PendingIntent pendingIntent;
@@ -102,13 +104,12 @@ public class UIManager {
         // minute entry buttons:
         // Each button sends an intent (carrying an integer amount) to trigger a response from the widgetprovider
         //TODO these shouldn't be hardcoded; and this should apparently use a Fill-in intent instead.
-        int[] entryAmounts = {1, 5, 20, 60, 100};
-        int[] entryIds = {R.id.OneButton, R.id.FiveButton, R.id.TwentyButton, R.id.SixtyButton, R.id.OneHundredButton};
+        int[] entryAmounts = {1, 5, 30, 100};
+        int[] entryIds = {R.id.OneButton, R.id.FiveButton, R.id.ThirtyButton, R.id.OneHundredButton};
         String[] entryActionIds = {"com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_0",
                 "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_1",
                 "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_2",
-                "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3",
-                "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_4"};
+                "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3"};
         for (int i = 0; i < entryAmounts.length; i++) {
             intent = new Intent(context, CapacityWidgetProvider.class);
             intent.setAction(entryActionIds[i]); //TODO handle strings correctly
@@ -121,18 +122,32 @@ public class UIManager {
 
         // assign the SettingsButton's onclicklistener to launch MainActivity
         intent = new Intent(context, MainActivity.class);
-
         //You need to specify a proper flag for the intent. Or else the intent will become deleted.
         pendingIntent = PendingIntent.getActivity(context,0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         newView.setOnClickPendingIntent(R.id.SettingsButton, pendingIntent);
         Log.d(TAG, "Settings button has pending intent "+pendingIntent.toString());
 
-
         //endregion
 
         // update the app widget
         appWidgetManager.updateAppWidget(appWidgetId, newView);
-//        }
+
+    }
+
+    /**
+     * Only updates the field with the current minut entry tally
+     */
+    public void updateEntryCounterDisplay(){
+        // add button info:
+        StringBuilder builder = new StringBuilder();
+        builder.append("minutes: ");
+        builder.append(sharedPreferences.getInt("EntryAmount", 0));
+        newView.setTextViewText(R.id.DisplayBar, builder); // add this string to the DisplayBar element of the view.
+
+
+        // update the app widget
+        appWidgetManager.updateAppWidget(appWidgetId, newView);
+
     }
 
 

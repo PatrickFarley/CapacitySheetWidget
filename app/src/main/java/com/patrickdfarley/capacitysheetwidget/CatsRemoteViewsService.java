@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.util.TypedValue;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
@@ -30,12 +31,20 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
     private Context mContext;
     private int mAppWidgetId;
     private String TAG = "CatsRemoteViewsFactory";
+    private int highlightColor;
 
     public CatsRemoteViewsFactory(Context context, Intent intent) {
         mContext = context;
         mAppWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                 AppWidgetManager.INVALID_APPWIDGET_ID);
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // get the system's color:
+        TypedValue typedValue = new TypedValue();
+        context.getTheme().resolveAttribute(android.R.attr.colorAccent, typedValue, true);
+        highlightColor = typedValue.data;
+        Log.d(TAG,"color value is: "+ typedValue.data);
+
     }
 
     // Initialize the data set.
@@ -69,7 +78,7 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
     @Override
     public RemoteViews getViewAt(int position) {
 
-        Log.d(TAG,"getViewAt called for "+position);
+        //Log.d(TAG,"getViewAt called for "+position);
         // position will always range from 0 to getCount() - 1.
         // construct a remote views item based on our widget item xml file, and set the
         // text based on the position.
@@ -82,7 +91,7 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
 
         // also check if this is the selected list item, in which case we have to highlight it.
         if (position == mCatId) {
-            childView.setInt(R.id.CatItem, "setBackgroundColor", Color.RED);
+            childView.setInt(R.id.CatItem, "setBackgroundColor", highlightColor);
         } else {
             childView.setInt(R.id.CatItem, "setBackgroundColor", Color.WHITE);
         }
@@ -110,7 +119,7 @@ class CatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
 //        }
 
         // Return the remote views object.
-        Log.d (TAG, "returning view "+childView.toString());
+        //Log.d (TAG, "returning view "+childView.toString());
         return childView;
     }
 

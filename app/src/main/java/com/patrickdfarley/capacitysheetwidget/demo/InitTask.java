@@ -208,12 +208,11 @@ public class InitTask extends AsyncTask<Void, Void, List<List<Object>>> {
             // minute entry buttons:
             // Each button sends an intent (carrying an integer amount) to trigger a response from the widgetprovider
             int[] entryAmounts = {1,5,20,60,100};
-            int[] entryIds = {R.id.OneButton, R.id.FiveButton, R.id.TwentyButton, R.id.SixtyButton, R.id.OneHundredButton};
+            int[] entryIds = {R.id.OneButton, R.id.FiveButton, R.id.ThirtyButton, R.id.OneHundredButton};
             String[] entryActionIds = {"com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_0",
                     "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_1",
                     "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_2",
-                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3",
-                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_4"};
+                    "com.patrickdfarley.capacitysheetwidget.ENTRY_BUTTON_3"};
 
             for (int i=0;i<entryAmounts.length;i++) {
                 intent = new Intent(context, CapacityWidgetProvider.class);
